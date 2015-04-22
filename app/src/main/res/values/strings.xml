@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name" translatable="false">Geostream</string>
+    <string name="cancel">Cancel</string>
+    <string name="error_no_camera">%s could not open your device\'s camera.</string>
+    <string name="error">Uh oh!</string>
+    <string name="back">Back</string>
+</resources>
