@@ -15,8 +15,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 
-import se.walkercrou.geostream.util.App;
-
 /**
  * Main activity of application. Displays a map around your current location and displays nearby
  * posts.
@@ -34,7 +32,7 @@ public class MapsActivity extends FragmentActivity implements GoogleApiClient.Co
         super.onCreate(b);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_maps);
-        App.d("MapsActivity created");
+
         // connect to location api
         googleApiClient = App.buildGoogleApiClient(this, this, this);
         googleApiClient.connect();
@@ -79,6 +77,7 @@ public class MapsActivity extends FragmentActivity implements GoogleApiClient.Co
 
     private void setUpMap() {
         // position on current location
+        map.getUiSettings().setScrollGesturesEnabled(false);
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(
                 new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()), MAP_ZOOM
         ));

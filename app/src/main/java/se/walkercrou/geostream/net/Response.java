@@ -1,16 +1,21 @@
 package se.walkercrou.geostream.net;
 
-import org.json.JSONObject;
-
 /**
  * Represents a response sent from the server.
  */
 public class Response {
+
+    // Some HTTP response codes
+    public static int CODE_OK = 200;
+    public static int CODE_CREATED = 201;
+
+    public static int FIRST_ERROR_CODE = 300;
+
     private final int responseCode;
     private final String responseMessage;
-    private final JSONObject body;
+    private final Object body;
 
-    public Response(int responseCode, String responseMessage, JSONObject body) {
+    public Response(int responseCode, String responseMessage, Object body) {
         this.responseCode = responseCode;
         this.responseMessage = responseMessage;
         this.body = body;
@@ -49,7 +54,7 @@ public class Response {
      *
      * @return json body
      */
-    public JSONObject getBody() {
+    public Object getBody() {
         return body;
     }
 
@@ -61,14 +66,14 @@ public class Response {
      * @return true if error
      */
     public static boolean isError(int code) {
-        return code < 200 || code >= 300;
+        return code < CODE_OK || code >= FIRST_ERROR_CODE;
     }
 
     @Override
     public String toString() {
         try {
             return "----- " + responseCode + " " + responseMessage + " -----\n"
-                    + body.toString(4);
+                    + body.toString();
         } catch (Exception e) {
             return super.toString();
         }

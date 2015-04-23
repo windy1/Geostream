@@ -26,6 +26,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.0.0'
     compile 'com.google.android.gms:play-services:7.0.0'
     compile 'com.melnykov:floatingactionbutton:1.3.0'
-    compile 'commons-codec:commons-codec:20041127.091804'
     //compile 'commons-validator:commons-validator:1.4.1' <- causing build error
 }

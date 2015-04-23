@@ -7,7 +7,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import se.walkercrou.geostream.util.App;
+import se.walkercrou.geostream.App;
 
 /**
  * Represents a request to be made to the server over a {@link ServerConnection}.
@@ -101,7 +101,7 @@ public class Request {
     public Response send() {
         // attach query string if GET method
         String url = relativeUrl;
-        if (method.equals(METHOD_GET))
+        if (method.equals(METHOD_GET) && !data.isEmpty())
             url += '?' + queryString();
 
         // connect to server
@@ -113,13 +113,10 @@ public class Request {
         if (authEncoding != null)
             conn.auth(authEncoding);
 
-        // send request if POST method
-        if (method.equals(METHOD_POST))
-            conn.sendRequest(this);
-
-        // return the response
-        Response response = conn.readResponse();
-        App.d(response.toString());
+        // send request and read response
+        Response response = conn.sendRequest(this);
+        if (response != null)
+            App.d(response);
         conn.disconnect();
         return response;
     }

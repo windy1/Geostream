@@ -3,7 +3,6 @@ package se.walkercrou.geostream.net;
 import android.location.Location;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,13 +50,14 @@ public class Post {
     /**
      * Sends this post to the server.
      */
-    public void sendInBackground() {
+    public boolean sendInBackground() {
         Request request = new Request(Request.METHOD_POST, SERVER_URI);
         request.set("user", "http://10.245.77.244:8000/api/users/1/");
         request.set("lat", location.getLatitude());
         request.set("lng", location.getLongitude());
         request.set("media_file", new FileValue("post.bmp", data.get(0)));
         request.setAuthorization("walker", "quacking7");
-        request.sendInBackground();
+        Response response = request.sendInBackground();
+        return response != null && response.getResponseCode() == Response.CODE_CREATED;
     }
 }

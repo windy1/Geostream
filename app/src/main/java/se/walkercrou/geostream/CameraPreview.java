@@ -17,15 +17,44 @@ import java.io.IOException;
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private Camera cam;
     private final Camera.PreviewCallback callback;
+    private final SurfaceHolder holder;
 
-    public CameraPreview(Context context, Camera.PreviewCallback callback, Camera cam) {
+    public CameraPreview(Context context, Camera.PreviewCallback callback) {
         super(context);
         this.callback = callback;
-        this.cam = cam;
 
-        SurfaceHolder holder = getHolder();
+        holder = getHolder();
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+    }
+
+    /**
+     * Sets the Camera that is sending frames to the preview.
+     *
+     * @param cam to set
+     */
+    public void setCamera(Camera cam) {
+        stopPreviewAndFreeCamera();
+        this.cam = cam;
+        if (cam != null) {
+            try {
+                cam.setPreviewDisplay(holder);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            cam.startPreview();
+        }
+    }
+
+    public void stopPreviewAndFreeCamera() {
+        // cleans up camera
+        if (cam != null) {
+            cam.setPreviewCallback(null);
+            getHolder().removeCallback(this);
+            cam.stopPreview();
+            cam.release();
+            cam = null;
+        }
     }
 
     @Override
@@ -62,6 +91,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        stopPreviewAndFreeCamera();
     }
 
     private void correctCameraOrientation(int width, int height) {

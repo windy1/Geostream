@@ -14,7 +14,9 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -25,11 +27,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.net.HttpURLConnection;
+import org.json.JSONException;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import se.walkercrou.geostream.util.App;
+import se.walkercrou.geostream.net.Request;
+import se.walkercrou.geostream.net.Response;
+import se.walkercrou.geostream.net.ServerConnection;
 
 /**
  * A login screen that offers login via email/password.
@@ -89,6 +94,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
      * errors are presented and no actual login attempt is made.
      */
     public void attemptLogin() {
+        App.d("Attempting login");
         if (authTask != null) {
             return;
         }
@@ -136,8 +142,9 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
     }
 
     private boolean isEmailValid(String email) {
+        // TODO: Fix build issue with apache validator
         //return EmailValidator.getInstance().isValid(email);
-        return email.contains("@");
+        return true;
     }
 
     private boolean isPasswordValid(String password) {
@@ -184,18 +191,18 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         return new CursorLoader(this,
-                // Retrieve data rows for the device user's 'profile' contact.
-                Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
-                        ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
+            // Retrieve data rows for the device user's 'profile' contact.
+            Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
+                    ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
 
-                // Select only email addresses.
-                ContactsContract.Contacts.Data.MIMETYPE +
-                        " = ?", new String[]{ContactsContract.CommonDataKinds.Email
-                .CONTENT_ITEM_TYPE},
+            // Select only email addresses.
+            ContactsContract.Contacts.Data.MIMETYPE +
+                    " = ?", new String[]{ContactsContract.CommonDataKinds.Email
+            .CONTENT_ITEM_TYPE},
 
-                // Show primary email addresses first. Note that there won't be
-                // a primary email address if the user hasn't specified one.
-                ContactsContract.Contacts.Data.IS_PRIMARY + " DESC");
+            // Show primary email addresses first. Note that there won't be
+            // a primary email address if the user hasn't specified one.
+            ContactsContract.Contacts.Data.IS_PRIMARY + " DESC");
     }
 
     @Override
@@ -206,7 +213,6 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
             emails.add(cursor.getString(ProfileQuery.ADDRESS));
             cursor.moveToNext();
         }
-
         addEmailsToAutoComplete(emails);
     }
 
@@ -219,7 +225,6 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
                 ContactsContract.CommonDataKinds.Email.ADDRESS,
                 ContactsContract.CommonDataKinds.Email.IS_PRIMARY,
         };
-
         int ADDRESS = 0;
     }
 
@@ -229,7 +234,6 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(LoginActivity.this,
                         android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
-
         emailView.setAdapter(adapter);
     }
 
@@ -238,7 +242,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
      * the user.
      */
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
-        private static final String uri = "/api/users";
+        private static final String uri = "/api/posts/";
 
         private final String email;
         private final String password;
@@ -251,8 +255,15 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
         @Override
         protected Boolean doInBackground(Void... params) {
             // connect to server
+            ServerConnection conn = new ServerConnection(uri);
+            if (!conn.connect())
+                return false;
 
-            // attempt to login
+            // attempt to get nearby posts
+            Request request = new Request(Request.METHOD_GET, uri);
+            request.setAuthorization(email, password);
+            Response response = request.send();
+            App.d(response.getBody().toString());
 
             return true;
         }

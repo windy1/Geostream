@@ -1,4 +1,4 @@
-package se.walkercrou.geostream.util;
+package se.walkercrou.geostream;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,19 +7,14 @@ import android.util.Log;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-import se.walkercrou.geostream.R;
-
-import static com.google.android.gms.common.api.GoogleApiClient.*;
+import static com.google.android.gms.common.api.GoogleApiClient.Builder;
+import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 
 /**
  * Helper class for convenience static functions
  */
 public final class App {
-    public static final String SERVER_URI = "http://192.168.128.236:8000";
-
     private static App instance;
     private String name;
 
@@ -61,8 +56,8 @@ public final class App {
      *
      * @param msg to log
      */
-    public static void d(String msg) {
-        Log.d(getName(), msg);
+    public static void d(Object msg) {
+        Log.d(getName(), msg.toString());
     }
 
     /**

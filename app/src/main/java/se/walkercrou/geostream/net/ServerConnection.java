@@ -1,5 +1,7 @@
 package se.walkercrou.geostream.net;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -12,13 +14,13 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Map;
 
-import se.walkercrou.geostream.util.App;
+import se.walkercrou.geostream.App;
 
 /**
  * Represents a connection to the Geostream server
  */
 public class ServerConnection {
-    public static final String SERVER_URI = "http://10.245.155.173:8000";
+    public static final String ROOT_URL = "http://10.245.155.173:8000";
 
     // http request writing stuff
     private static final String crlf = "\r\n";
@@ -40,7 +42,7 @@ public class ServerConnection {
      */
     public boolean connect() {
         // establish connection
-        String uri = SERVER_URI + relativeUrl;
+        String uri = ROOT_URL + relativeUrl;
         App.d("Establishing connection to " + uri);
         try {
             URL url = new URL(uri);
@@ -52,7 +54,6 @@ public class ServerConnection {
 
         // configure connection
         conn.setUseCaches(false);
-        conn.setDoOutput(true);
         conn.setDoInput(true);
         conn.setInstanceFollowRedirects(false);
         conn.setConnectTimeout(10000);
@@ -80,11 +81,16 @@ public class ServerConnection {
      *
      * @param request to send
      */
-    public void sendRequest(Request request) {
+    public Response sendRequest(Request request) {
         try {
             App.d("Sending request to server");
-            // get output stream for connection
+            String method = request.getMethod();
             setRequestMethod(request.getMethod());
+            if (method.equals(Request.METHOD_GET))
+                return readResponse();
+
+            // get output stream for connection
+            conn.setDoOutput(true);
             out = new DataOutputStream(conn.getOutputStream());
 
             // write the request
@@ -93,17 +99,15 @@ public class ServerConnection {
             // flush and close the buffer
             out.flush();
             out.close();
+
+            return readResponse();
         } catch (Exception e) {
             App.e("An error occurred while trying to write a request to the server.", e);
+            return null;
         }
     }
 
-    /**
-     * Returns the server's response.
-     *
-     * @return servers response
-     */
-    public Response readResponse() {
+    private Response readResponse() {
         try {
             App.d("Reading response from server");
             // get input stream to server
@@ -127,9 +131,18 @@ public class ServerConnection {
             reader.close();
             in.close();
 
+            // build json
+            String jsonString = builder.toString();
+            JSONObject obj = null;
+            JSONArray array = null;
+            try {
+                obj = new JSONObject(jsonString);
+            } catch (JSONException e) {
+                array = new JSONArray(jsonString);
+            }
+
             // return a new response object
-            return new Response(code, conn.getResponseMessage(),
-                    new JSONObject(builder.toString()));
+            return new Response(code, conn.getResponseMessage(), obj != null ? obj : array);
         } catch (Exception e) {
             App.e("An error occurred while trying to read the response from the server", e);
             return null;
@@ -143,13 +156,8 @@ public class ServerConnection {
         conn.disconnect();
     }
 
-    private void setRequestMethod(String method) {
-        try {
-            conn.setRequestMethod(method);
-        } catch (ProtocolException e) {
-            e.printStackTrace();
-        }
-
+    private void setRequestMethod(String method) throws ProtocolException {
+        conn.setRequestMethod(method);
         // if posting, tell the server we are serving it form data
         if (method.equals(Request.METHOD_POST))
             conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
