@@ -135,6 +135,7 @@ public class ServerConnection {
             String jsonString = builder.toString();
             JSONObject obj = null;
             JSONArray array = null;
+            App.d(jsonString);
             try {
                 obj = new JSONObject(jsonString);
             } catch (JSONException e) {

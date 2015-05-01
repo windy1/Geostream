@@ -1,8 +1,9 @@
-package se.walkercrou.geostream;
+package se.walkercrou.geostream.auth;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.content.CursorLoader;
@@ -14,9 +15,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
-import android.support.v4.app.ActivityOptionsCompat;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -28,32 +27,35 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.MapActivity;
+import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.net.Request;
 import se.walkercrou.geostream.net.Response;
-import se.walkercrou.geostream.net.ServerConnection;
+
 
 /**
- * A login screen that offers login via email/password.
+ * A signup screen that offers registration via email/password.
  */
-public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
-    private static final int MIN_PASSWORD_LENGTH = 6;
-    private static final int MAX_PASSWORD_LENGTH = 128;
-    private UserLoginTask authTask = null;
+public class SignupActivity extends Activity implements LoaderCallbacks<Cursor> {
+    private UserLoginTask mAuthTask = null;
 
     // UI references.
     private AutoCompleteTextView emailView;
     private EditText passwordView;
     private View progressView;
-    private View loginFormView;
+    private View signupFormView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+        setContentView(R.layout.activity_signup);
+        setupActionBar();
 
         // Set up the login form.
         emailView = (AutoCompleteTextView) findViewById(R.id.email);
@@ -64,38 +66,44 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
                 if (id == R.id.login || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
+                    attemptSignup();
                     return true;
                 }
                 return false;
             }
         });
 
-        Button emailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        emailSignInButton.setOnClickListener(new OnClickListener() {
+        Button emailSignupButton = (Button) findViewById(R.id.sign_up_button);
+        emailSignupButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                attemptLogin();
+                attemptSignup();
             }
         });
 
-        loginFormView = findViewById(R.id.login_form);
-        progressView = findViewById(R.id.login_progress);
+        signupFormView = findViewById(R.id.signup_form);
+        progressView = findViewById(R.id.signup_progress);
     }
 
     private void populateAutoComplete() {
         getLoaderManager().initLoader(0, null, this);
     }
 
-
     /**
-     * Attempts to sign in or register the account specified by the login form.
-     * If there are form errors (invalid email, missing fields, etc.), the
-     * errors are presented and no actual login attempt is made.
+     * Set up the {@link android.app.ActionBar}, if the API is available.
      */
-    public void attemptLogin() {
-        App.d("Attempting login");
-        if (authTask != null) {
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    private void setupActionBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            // Show the Up button in the action bar.
+            ActionBar ab = getActionBar();
+            if (ab != null)
+                getActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    public void attemptSignup() {
+        if (mAuthTask != null) {
             return;
         }
 
@@ -136,20 +144,19 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            authTask = new UserLoginTask(email, password);
-            authTask.execute((Void) null);
+            mAuthTask = new UserLoginTask(email, password);
+            mAuthTask.execute((Void) null);
         }
     }
 
     private boolean isEmailValid(String email) {
-        // TODO: Fix build issue with apache validator
-        //return EmailValidator.getInstance().isValid(email);
-        return true;
+        //TODO: Replace this with your own logic
+        return email.contains("@");
     }
 
     private boolean isPasswordValid(String password) {
-        int len = password.length();
-        return len >= MIN_PASSWORD_LENGTH && len <= MAX_PASSWORD_LENGTH;
+        //TODO: Replace this with your own logic
+        return password.length() > 4;
     }
 
     /**
@@ -163,12 +170,12 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
-            loginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
-            loginFormView.animate().setDuration(shortAnimTime).alpha(
+            signupFormView.setVisibility(show ? View.GONE : View.VISIBLE);
+            signupFormView.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    loginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
+                    signupFormView.setVisibility(show ? View.GONE : View.VISIBLE);
                 }
             });
 
@@ -184,7 +191,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
             // The ViewPropertyAnimator APIs are not available, so simply show
             // and hide the relevant UI components.
             progressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            loginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
+            signupFormView.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 
@@ -218,6 +225,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
 
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
+
     }
 
     private interface ProfileQuery {
@@ -232,20 +240,20 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
     private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
         //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
         ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(LoginActivity.this,
+                new ArrayAdapter<>(SignupActivity.this,
                         android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
         emailView.setAdapter(adapter);
     }
 
     /**
-     * Represents an asynchronous login/registration task used to authenticate
+     * Represents an asynchronous registration task used to authenticate
      * the user.
      */
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
-        private static final String uri = "/api/posts/";
 
         private final String email;
         private final String password;
+        private String error;
 
         public UserLoginTask(String email, String password) {
             this.email = email;
@@ -254,27 +262,60 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // connect to server
-            ServerConnection conn = new ServerConnection(uri);
-            if (!conn.connect())
-                return false;
+            // TODO: temporary solution, phase usernames out
+            String username = email.substring(0, email.indexOf('@'));
 
-            // attempt to get nearby posts
-            Request request = new Request(Request.METHOD_GET, uri);
-            request.setAuthorization(email, password);
-            Response response = request.send();
-            App.d(response.getBody().toString());
+            // send request
+            Response response = new Request(Request.METHOD_POST, Request.URL_SIGNUP)
+                    .set("username", username)
+                    .set("email", email)
+                    .set("password", password)
+                    .send();
+
+            // check response for error
+            if (response == null)
+                return noConnection();
+            else if (response.isError())
+                return error(response.getErrorDetail());
+
+            // success, get user info
+            int userId;
+            try {
+                JSONObject json = (JSONObject) response.getBody();
+                userId = json.getInt("id");
+            } catch (JSONException e) {
+                App.e("An error occurred while reading the JSON response from the server", e);
+                return false;
+            }
+
+            // commit user info to preferences
+            App.getSharedPreferences(SignupActivity.this).edit()
+                    .putInt(App.PREF_USER_ID, userId)
+                    .putString(App.PREF_USER_NAME, username)
+                    .putString(App.PREF_USER_PASSWORD, password)
+                    .commit();
 
             return true;
         }
 
+        private boolean noConnection() {
+            error = SignupActivity.this.getString(R.string.error_no_connection);
+            error = String.format(error, App.getName());
+            return false;
+        }
+
+        private boolean error(String error) {
+            this.error = error;
+            return false;
+        }
+
         @Override
         protected void onPostExecute(final Boolean success) {
-            authTask = null;
+            mAuthTask = null;
             showProgress(false);
 
             if (success) {
-                startActivity(new Intent(LoginActivity.this, MapsActivity.class));
+                startActivity(new Intent(SignupActivity.this, MapActivity.class));
             } else {
                 passwordView.setError(getString(R.string.error_incorrect_password));
                 passwordView.requestFocus();
@@ -283,7 +324,7 @@ public class LoginActivity extends Activity implements LoaderCallbacks<Cursor> {
 
         @Override
         protected void onCancelled() {
-            authTask = null;
+            mAuthTask = null;
             showProgress(false);
         }
     }

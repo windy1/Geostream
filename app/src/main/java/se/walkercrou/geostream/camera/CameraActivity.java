@@ -1,8 +1,9 @@
-package se.walkercrou.geostream;
+package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.location.Location;
 import android.net.ConnectivityManager;
@@ -24,7 +25,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.MapActivity;
+import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.net.Post;
+import se.walkercrou.geostream.net.Response;
 
 /**
  * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to
@@ -167,8 +172,12 @@ public class CameraActivity extends Activity implements View.OnClickListener,
             return;
 
         // send post
-        if (!new Post(lastLocation, imageData).sendInBackground())
+        Post post = new Post(lastLocation, imageData);
+        Response response = post.createRequest(this).sendInBackground();
+        if (response == null || response.isError())
             showSendPostErrorDialog();
+        else
+            startActivity(new Intent(this, MapActivity.class));
     }
 
     private void showSendPostErrorDialog() {
@@ -225,7 +234,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         String msg = String.format(getString(R.string.error_no_camera), App.getName());
         builder.setMessage(msg).setTitle(R.string.error);
-        builder.setPositiveButton(R.string.back, new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.action_back, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 finish();

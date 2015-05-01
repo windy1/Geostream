@@ -16,6 +16,13 @@ public class Request {
     public static final String METHOD_POST = "POST";
     public static final String METHOD_GET = "GET";
 
+    public static final String URL_POST_LIST = "/api/posts/";
+    public static final String URL_POST_DETAIL = "/api/posts/%s/";
+    public static final String URL_POST_MEDIA = "/media/%s/";
+    public static final String URL_USER_LIST = "/api/users/";
+    public static final String URL_USER_DETAIL = "/api/users/%s/";
+    public static final String URL_SIGNUP = "/api/signup/";
+
     private final String method, relativeUrl;
     private String authEncoding;
     private final Map<String, Object> data = new HashMap<>();
@@ -25,14 +32,20 @@ public class Request {
         this.relativeUrl = relativeUrl;
     }
 
+    public Request(String method, String relativeUrl, String lookup) {
+        this.method = method;
+        this.relativeUrl = String.format(relativeUrl, lookup);
+    }
+
     /**
      * Sets a parameter for the request
      *
      * @param name to set
      * @param value to set
      */
-    public void set(String name, Object value) {
+    public Request set(String name, Object value) {
         data.put(name, value);
+        return this;
     }
 
     /**
@@ -88,9 +101,10 @@ public class Request {
      * @param username username
      * @param password password
      */
-    public void setAuthorization(String username, String password) {
+    public Request setAuthorization(String username, String password) {
         authEncoding = Base64.encodeToString((username + ":" + password).getBytes(),
                 Base64.DEFAULT);
+        return this;
     }
 
     /**

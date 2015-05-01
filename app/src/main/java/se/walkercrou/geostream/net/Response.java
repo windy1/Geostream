@@ -1,5 +1,10 @@
 package se.walkercrou.geostream.net;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import se.walkercrou.geostream.App;
+
 /**
  * Represents a response sent from the server.
  */
@@ -7,9 +12,12 @@ public class Response {
 
     // Some HTTP response codes
     public static int CODE_OK = 200;
-    public static int CODE_CREATED = 201;
+    public static int CODE_UNAUTHORIZED = 401;
+    public static int CODE_NOT_FOUND = 404;
 
     public static int FIRST_ERROR_CODE = 300;
+
+    public static String ERROR_DETAIL = "detail";
 
     private final int responseCode;
     private final String responseMessage;
@@ -38,6 +46,20 @@ public class Response {
      */
     public boolean isError() {
         return isError(responseCode);
+    }
+
+    /**
+     * Returns the error message of this response.
+     *
+     * @return error message
+     */
+    public String getErrorDetail() {
+        try {
+            return ((JSONObject) body).getString(ERROR_DETAIL);
+        } catch (JSONException e) {
+            App.e("An error occurred while parsing JSON response", e);
+            return null;
+        }
     }
 
     /**

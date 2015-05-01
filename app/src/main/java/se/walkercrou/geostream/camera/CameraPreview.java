@@ -1,4 +1,4 @@
-package se.walkercrou.geostream;
+package se.walkercrou.geostream.camera;
 
 import android.content.Context;
 import android.hardware.Camera;

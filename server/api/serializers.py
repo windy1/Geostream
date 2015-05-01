@@ -1,15 +1,17 @@
-from django.contrib.auth.models import User
-from api.models import Post
 from rest_framework import serializers
+from .models import Post
+from django.contrib.auth.models import User
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('url', 'username', 'email')
+        fields = ('id', 'url', 'username', 'username')
+        # makes URLs formatted like '/api/users/<username>/'
+        lookup_field = 'username'
 
 
-class PostSerializer(serializers.HyperlinkedModelSerializer):
+class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('media_file', 'is_video', 'user', 'lat', 'lng', 'post_date')
+        fields = ('created', 'user', 'lat', 'lng', 'media_file', 'is_video')

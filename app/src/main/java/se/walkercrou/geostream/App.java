@@ -15,6 +15,10 @@ import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFail
  * Helper class for convenience static functions
  */
 public final class App {
+    public static final String PREF_USER_ID = "user_id";
+    public static final String PREF_USER_NAME = "username";
+    public static final String PREF_USER_PASSWORD = "password";
+
     private static App instance;
     private String name;
 

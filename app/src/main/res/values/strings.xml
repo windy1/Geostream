@@ -1,10 +1,12 @@
 <resources>
     <string name="app_name" translatable="false">Geostream</string>
-    <string name="cancel">Cancel</string>
-    <string name="back">Back</string>
+    <string name="title_activity_post">Post</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
     <string name="ok">OK</string>
 
     <string name="error_no_camera">%s could not open your device\'s camera.</string>
     <string name="error_send_post">Something went wrong while uploading your post.</string>
     <string name="error">Uh oh!</string>
+    <string name="error_no_connection">%s could not connect to the server. Please try again later.</string>
 </resources>

@@ -54,6 +54,6 @@
         android:layout_margin="16dp"
         android:src="@drawable/ic_action_cancel"
         android:background="@android:color/transparent"
-        android:contentDescription="@string/cancel" />
+        android:contentDescription="@string/action_cancel" />
 
 </RelativeLayout>
