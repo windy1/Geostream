@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'url', 'username', 'username')
+        fields = ('id', 'url', 'username')
         # makes URLs formatted like '/api/users/<username>/'
         lookup_field = 'username'
 

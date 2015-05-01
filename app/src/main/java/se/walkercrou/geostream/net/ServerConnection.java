@@ -1,188 +1,154 @@
 package se.walkercrou.geostream.net;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Map;
 
 import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.net.request.FileValue;
+import se.walkercrou.geostream.net.request.Request;
+import se.walkercrou.geostream.net.response.Response;
 
 /**
- * Represents a connection to the Geostream server
+ * Represents a connection to a Geostream server
  */
-public class ServerConnection {
-    public static final String ROOT_URL = "http://10.245.155.173:8000";
+public class ServerConnection<T extends Response> {
+    public static final String ROOT_URL = "http://10.245.69.125:8000";
 
     // http request writing stuff
     private static final String crlf = "\r\n";
     private static final String twoHyphens = "--";
-    private static final String boundary = "GeostreamFormBoundary";
+    private static final String boundary = App.getName() + "FormBoundary";
 
     private final String relativeUrl;
+    private final Class<T> responseClass;
     private HttpURLConnection conn;
     private DataOutputStream out;
 
-    public ServerConnection(String relativeUrl) {
+    public ServerConnection(String relativeUrl, Class<T> responseClass) {
         this.relativeUrl = relativeUrl;
-    }
+        this.responseClass = responseClass;
 
-    /**
-     * Attempts to connect to the Geostream server.
-     *
-     * @return true if successful
-     */
-    public boolean connect() {
-        // establish connection
         String uri = ROOT_URL + relativeUrl;
-        App.d("Establishing connection to " + uri);
         try {
             URL url = new URL(uri);
             conn = (HttpURLConnection) url.openConnection();
         } catch (Exception e) {
-            App.e("An error occurred while trying to connect to the server", e);
-            return false;
+            App.e("An error occurred while trying to initialize a connection to the server", e);
         }
 
         // configure connection
         conn.setUseCaches(false);
         conn.setDoInput(true);
         conn.setInstanceFollowRedirects(false);
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
 
         conn.setRequestProperty("Connection", "Keep-Alive");
         conn.setRequestProperty("Cache-Control", "no-cache");
-        conn.setRequestProperty("charset", "utf-8");
-
-        return true;
+        conn.setRequestProperty("charset", "UTF-8");
     }
 
     /**
-     * Adds a basic authentication header to the connection.
+     * Connects to the server and returns an {@link InputStream} connection.
      *
-     * @param encoding base64 encoding of username and password
+     * @return input stream
      */
-    public void auth(String encoding) {
-        // add a basic auth header
-        conn.setRequestProperty("Authorization", "Basic " + encoding);
-    }
-
-    /**
-     * Sends a request to the server.
-     *
-     * @param request to send
-     */
-    public Response sendRequest(Request request) {
+    public T connect() {
         try {
-            App.d("Sending request to server");
-            String method = request.getMethod();
-            setRequestMethod(request.getMethod());
-            if (method.equals(Request.METHOD_GET))
-                return readResponse();
-
-            // get output stream for connection
-            conn.setDoOutput(true);
-            out = new DataOutputStream(conn.getOutputStream());
-
-            // write the request
-            writeRequest(request);
-
-            // flush and close the buffer
-            out.flush();
-            out.close();
-
-            return readResponse();
-        } catch (Exception e) {
-            App.e("An error occurred while trying to write a request to the server.", e);
-            return null;
-        }
-    }
-
-    private Response readResponse() {
-        try {
-            App.d("Reading response from server");
-            // get input stream to server
+            // get input stream
+            App.d("Establishing connection to " + ROOT_URL + relativeUrl);
             InputStream in;
             int code = conn.getResponseCode();
             if (code < 200 || code >= 300)
                 in = conn.getErrorStream();
             else
                 in = conn.getInputStream();
-
             App.d("Connection established");
 
-            // read the response
-            StringBuilder builder = new StringBuilder();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-            String ln;
-            while ((ln = reader.readLine()) != null)
-                builder.append(ln).append('\n');
-
-            // close the reader and input stream
-            reader.close();
-            in.close();
-
-            // build json
-            String jsonString = builder.toString();
-            JSONObject obj = null;
-            JSONArray array = null;
-            App.d(jsonString);
-            try {
-                obj = new JSONObject(jsonString);
-            } catch (JSONException e) {
-                array = new JSONArray(jsonString);
-            }
-
-            // return a new response object
-            return new Response(code, conn.getResponseMessage(), obj != null ? obj : array);
+            // create response
+            return responseClass.getConstructor(
+                    int.class, String.class, InputStream.class
+            ).newInstance(code, conn.getResponseMessage(), in);
         } catch (Exception e) {
-            App.e("An error occurred while trying to read the response from the server", e);
+            App.e("An error occurred while trying to connect to the server", e);
             return null;
         }
     }
 
     /**
-     * Disconnects from the server
+     * Severs the connection to the server.
      */
     public void disconnect() {
         conn.disconnect();
     }
 
-    private void setRequestMethod(String method) throws ProtocolException {
-        conn.setRequestMethod(method);
-        // if posting, tell the server we are serving it form data
+    /**
+     * Sets the Authorization header with a basic authentication encoding.
+     *
+     * @param encoding to set in header
+     * @return this connection
+     */
+    public ServerConnection auth(String encoding) {
+        conn.setRequestProperty("Authorization", "Basic " + encoding);
+        return this;
+    }
+
+    /**
+     * Sets the HTTP method to use in the connection
+     *
+     * @param method to use when connecting
+     * @return this connection
+     */
+    public ServerConnection method(String method) {
+        try {
+            conn.setRequestMethod(method);
+        } catch (ProtocolException ignored) {}
+        // tell the server we are sending form data if a POST request
         if (method.equals(Request.METHOD_POST))
             conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+        return this;
+    }
+
+    /**
+     * Writes the specified mapped key-value pairs to the HTTP request to send upon connection.
+     *
+     * @param data to send
+     */
+    public void writeFormData(Map<String, Object> data) {
+        try {
+            // get output stream for connection
+            conn.setDoOutput(true);
+            out = new DataOutputStream(conn.getOutputStream());
+
+            // write each data pair
+            for (String name : data.keySet())
+                writeData(name, data.get(name));
+
+            // flush and close the output stream
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            App.e("An error occurred while trying to write form data to the server", e);
+        }
     }
 
     private void writeBoundary() throws IOException {
+        // separates form data in HTTP request
         out.writeBytes(twoHyphens + boundary + crlf);
     }
 
-    private void writeRequest(Request request) throws IOException {
-        writeBoundary();
-        Map<String, Object> data = request.getData();
-        for (String name : data.keySet())
-            writeData(name, data.get(name));
-    }
-
     private void writeData(String name, Object value) throws IOException {
+        writeBoundary();
         String contentDisposition = "Content-Disposition: form-data; name=\"" + name + "\"";
 
-        // check if the value is actually a file
+        // check if the value is a file
         boolean file = false;
         if (value instanceof FileValue) {
             file = true;
-            // add the filename attribute if uploading a file
+            // add filename attribute if uploading a file
             FileValue fileValue = (FileValue) value;
             contentDisposition += ";filename=\"" + fileValue.getFileName() + "\"";
             value = fileValue.getData();
@@ -197,5 +163,15 @@ public class ServerConnection {
         else
             out.writeBytes(value.toString());
         writeBoundary();
+    }
+
+    /**
+     * Returns true if the specified status code is an error.
+     *
+     * @param code to check
+     * @return true if error
+     */
+    public static boolean isStatusError(int code) {
+        return code < Request.STATUS_OK || code >= Request.FIRST_ERROR_STATUS;
     }
 }

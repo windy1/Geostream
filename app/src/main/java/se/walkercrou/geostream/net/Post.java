@@ -6,8 +6,6 @@ import android.graphics.Bitmap;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -24,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.net.request.ApiRequest;
+import se.walkercrou.geostream.net.request.FileValue;
+import se.walkercrou.geostream.net.request.Request;
 
 /**
  * Represents a Post that a user has created with a location and an image or video.
@@ -113,12 +114,12 @@ public class Post implements Parcelable {
      * @param c context
      * @return CREATE request
      */
-    public Request createRequest(Context c) {
+    public ApiRequest createRequest(Context c) {
         SharedPreferences prefs = App.getSharedPreferences(c);
         int userId = prefs.getInt(App.PREF_USER_ID, 0);
         String username = prefs.getString(App.PREF_USER_NAME, null);
         String password = prefs.getString(App.PREF_USER_PASSWORD, null);
-        return new Request(Request.METHOD_POST, Request.URL_POST_LIST)
+        return new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
                 .set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_USER, userId)
@@ -133,11 +134,11 @@ public class Post implements Parcelable {
      * @param c context
      * @return request to LIST all posts
      */
-    public static Request listRequest(Context c) {
+    public static ApiRequest listRequest(Context c) {
         SharedPreferences prefs = App.getSharedPreferences(c);
         String username = prefs.getString(App.PREF_USER_NAME, null);
         String password = prefs.getString(App.PREF_USER_PASSWORD, null);
-        return new Request(Request.METHOD_GET, Request.URL_POST_LIST)
+        return new ApiRequest(Request.METHOD_GET, ApiRequest.URL_POST_LIST)
                 .setAuthorization(username, password);
     }
 

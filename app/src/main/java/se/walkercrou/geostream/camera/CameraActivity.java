@@ -29,7 +29,7 @@ import se.walkercrou.geostream.App;
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.net.Post;
-import se.walkercrou.geostream.net.Response;
+import se.walkercrou.geostream.net.response.ApiResponse;
 
 /**
  * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to
@@ -173,7 +173,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
 
         // send post
         Post post = new Post(lastLocation, imageData);
-        Response response = post.createRequest(this).sendInBackground();
+        ApiResponse response = post.createRequest(this).sendInBackground();
         if (response == null || response.isError())
             showSendPostErrorDialog();
         else

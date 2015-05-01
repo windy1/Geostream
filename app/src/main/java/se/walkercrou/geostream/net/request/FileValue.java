@@ -1,4 +1,4 @@
-package se.walkercrou.geostream.net;
+package se.walkercrou.geostream.net.request;
 
 /**
  * Represents a POST parameter for a file.

@@ -24,7 +24,7 @@ import java.util.List;
 
 import se.walkercrou.geostream.camera.CameraActivity;
 import se.walkercrou.geostream.net.Post;
-import se.walkercrou.geostream.net.Response;
+import se.walkercrou.geostream.net.response.ApiResponse;
 
 /**
  * Main activity of application. Displays a map around your current location and displays nearby
@@ -78,7 +78,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
     }
 
     private List<Post> getPosts() {
-        Response response = Post.listRequest(this).sendInBackground();
+        ApiResponse response = Post.listRequest(this).sendInBackground();
         String error = null;
         if (response == null) {
             error = getString(R.string.error_no_connection);
@@ -89,7 +89,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
         if (error != null)
             Toast.makeText(this, error, Toast.LENGTH_LONG).show();
 
-        return response == null ? null : Post.parse((JSONArray) response.getBody());
+        return response == null ? null : Post.parse((JSONArray) response.get());
     }
 
     private void setUpMapIfNeeded() {

@@ -35,9 +35,9 @@ import java.util.List;
 import se.walkercrou.geostream.App;
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.net.Request;
-import se.walkercrou.geostream.net.Response;
-
+import se.walkercrou.geostream.net.request.ApiRequest;
+import se.walkercrou.geostream.net.request.Request;
+import se.walkercrou.geostream.net.response.ApiResponse;
 
 /**
  * A signup screen that offers registration via email/password.
@@ -266,7 +266,11 @@ public class SignupActivity extends Activity implements LoaderCallbacks<Cursor> 
             String username = email.substring(0, email.indexOf('@'));
 
             // send request
-            Response response = new Request(Request.METHOD_POST, Request.URL_SIGNUP)
+            ApiRequest request = new ApiRequest(
+                    Request.METHOD_POST, ApiRequest.URL_SIGNUP
+            );
+
+            ApiResponse response = request
                     .set("username", username)
                     .set("email", email)
                     .set("password", password)
@@ -281,7 +285,7 @@ public class SignupActivity extends Activity implements LoaderCallbacks<Cursor> 
             // success, get user info
             int userId;
             try {
-                JSONObject json = (JSONObject) response.getBody();
+                JSONObject json = (JSONObject) response.get();
                 userId = json.getInt("id");
             } catch (JSONException e) {
                 App.e("An error occurred while reading the JSON response from the server", e);

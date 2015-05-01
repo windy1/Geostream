@@ -24,8 +24,9 @@ import org.json.JSONObject;
 import se.walkercrou.geostream.App;
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.net.Request;
-import se.walkercrou.geostream.net.Response;
+import se.walkercrou.geostream.net.request.ApiRequest;
+import se.walkercrou.geostream.net.request.Request;
+import se.walkercrou.geostream.net.response.ApiResponse;
 
 /**
  * A login screen that offers login via username/password.
@@ -183,14 +184,15 @@ public class LoginActivity extends Activity {
             App.d("Attempting login for : \"" + username + "\"");
 
             // check if the user exists
-            Response response = new Request(Request.METHOD_GET, Request.URL_USER_DETAIL, username)
-                    .setAuthorization(username, password).send();
+            ApiResponse response = new ApiRequest(
+                    Request.METHOD_GET, ApiRequest.URL_USER_DETAIL, username
+            ).setAuthorization(username, password).send();
 
             // check response for error
             if (response == null)
                 return noConnection();
             else if (response.isError()) {
-                if (response.getResponseCode() == Response.CODE_UNAUTHORIZED) {
+                if (response.getStatusCode() == Request.STATUS_UNAUTHORIZED) {
                     // bad username or password, or the user does not exist
                     badPassword = true;
                     return false;
@@ -202,7 +204,7 @@ public class LoginActivity extends Activity {
             // success, get user id
             int userId;
             try {
-                userId = ((JSONObject) response.getBody()).getInt("id");
+                userId = ((JSONObject) response.get()).getInt("id");
             } catch (JSONException e) {
                 App.e("An error occurred while reading the JSON response from the server", e);
                 return false;
