@@ -173,7 +173,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
 
         // send post
         Post post = new Post(lastLocation, imageData);
-        ApiResponse response = post.createRequest(this).sendInBackground();
+        ApiResponse response = post.createRequest().sendInBackground();
         if (response == null || response.isError())
             showSendPostErrorDialog();
         else

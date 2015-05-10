@@ -1,7 +1,6 @@
 package se.walkercrou.geostream;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -15,10 +14,6 @@ import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFail
  * Helper class for convenience static functions
  */
 public final class App {
-    public static final String PREF_USER_ID = "user_id";
-    public static final String PREF_USER_NAME = "username";
-    public static final String PREF_USER_PASSWORD = "password";
-
     private static App instance;
     private String name;
 
@@ -43,16 +38,6 @@ public final class App {
      */
     public static String getName() {
         return instance.name;
-    }
-
-    /**
-     * Returns the application's preferences object.
-     *
-     * @param c context
-     * @return preferences
-     */
-    public static SharedPreferences getSharedPreferences(Context c) {
-        return c.getSharedPreferences(getName() + "Preferences", Context.MODE_PRIVATE);
     }
 
     /**

@@ -1,7 +1,6 @@
 package se.walkercrou.geostream.net.request;
 
 import android.os.AsyncTask;
-import android.util.Base64;
 
 import java.net.URLEncoder;
 import java.util.Collections;
@@ -28,7 +27,6 @@ public abstract class Request<T extends Response> {
     public static final int FIRST_ERROR_STATUS = 300;
 
     public final String method, relativeUrl;
-    protected String authEncoding;
     protected final Map<String, Object> data = new HashMap<>();
 
     public Request(String method, String relativeUrl) {
@@ -76,19 +74,6 @@ public abstract class Request<T extends Response> {
      */
     public Request set(String name, Object value) {
         data.put(name, value);
-        return this;
-    }
-
-    /**
-     * Sets this request's authorization header using basic authentication.
-     *
-     * @param username to set
-     * @param password to set
-     * @return this request
-     */
-    public Request setAuthorization(String username, String password) {
-        authEncoding = Base64.encodeToString((username + ":" + password).getBytes(),
-                Base64.DEFAULT);
         return this;
     }
 

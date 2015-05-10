@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     # include the api's urls
-    url(r'^api/', include('api.urls')),
+    url(r'^api/', include('gs_web_api.urls')),
 ]
 
 if settings.DEBUG:

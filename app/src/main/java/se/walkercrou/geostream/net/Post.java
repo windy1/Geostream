@@ -1,7 +1,6 @@
 package se.walkercrou.geostream.net;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.os.Parcel;
@@ -30,14 +29,15 @@ import se.walkercrou.geostream.net.request.Request;
  * Represents a Post that a user has created with a location and an image or video.
  */
 public class Post implements Parcelable {
+    // Post POST request parameters
     public static final String PARAM_LAT = "lat";
     public static final String PARAM_LNG = "lng";
-    public static final String PARAM_USER = "user";
     public static final String PARAM_FILE = "media_file";
     public static final String PARAM_IS_VIDEO = "is_video";
 
     public static final String FILE_NAME = "media_file.bmp";
 
+    // posts that have been placed on the map
     private static final Map<Marker, Post> mappedPosts = new HashMap<>();
 
     private final Location location;
@@ -92,6 +92,15 @@ public class Post implements Parcelable {
         return fileUrl;
     }
 
+    /**
+     * Returns true if this post's media has been downloaded from the server.
+     *
+     * @return true if cached
+     */
+    public boolean isCached() {
+        return image != null;
+    }
+
     public boolean downloadImage(Context c) {
         // TODO: download image from media url
         return true;
@@ -111,35 +120,23 @@ public class Post implements Parcelable {
     /**
      * Returns a CREATE {@link Request} for this Post.
      *
-     * @param c context
      * @return CREATE request
      */
-    public ApiRequest createRequest(Context c) {
-        SharedPreferences prefs = App.getSharedPreferences(c);
-        int userId = prefs.getInt(App.PREF_USER_ID, 0);
-        String username = prefs.getString(App.PREF_USER_NAME, null);
-        String password = prefs.getString(App.PREF_USER_PASSWORD, null);
+    public ApiRequest createRequest() {
         return new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
                 .set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
-                .set(PARAM_USER, userId)
                 .set(PARAM_FILE, new FileValue(FILE_NAME, data))
-                .set(PARAM_IS_VIDEO, isVideo())
-                .setAuthorization(username, password);
+                .set(PARAM_IS_VIDEO, isVideo());
     }
 
     /**
      * Returns a LIST {@link Request} for all Posts.
      *
-     * @param c context
      * @return request to LIST all posts
      */
-    public static ApiRequest listRequest(Context c) {
-        SharedPreferences prefs = App.getSharedPreferences(c);
-        String username = prefs.getString(App.PREF_USER_NAME, null);
-        String password = prefs.getString(App.PREF_USER_PASSWORD, null);
-        return new ApiRequest(Request.METHOD_GET, ApiRequest.URL_POST_LIST)
-                .setAuthorization(username, password);
+    public static ApiRequest listRequest() {
+        return new ApiRequest(Request.METHOD_GET, ApiRequest.URL_POST_LIST);
     }
 
     /**

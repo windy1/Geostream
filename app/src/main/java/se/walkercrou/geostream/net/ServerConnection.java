@@ -33,6 +33,7 @@ public class ServerConnection<T extends Response> {
         this.relativeUrl = relativeUrl;
         this.responseClass = responseClass;
 
+        // intialize the connection
         String uri = ROOT_URL + relativeUrl;
         try {
             URL url = new URL(uri);
@@ -62,7 +63,7 @@ public class ServerConnection<T extends Response> {
             App.d("Establishing connection to " + ROOT_URL + relativeUrl);
             InputStream in;
             int code = conn.getResponseCode();
-            if (code < 200 || code >= 300)
+            if (isStatusError(code))
                 in = conn.getErrorStream();
             else
                 in = conn.getInputStream();
@@ -86,17 +87,6 @@ public class ServerConnection<T extends Response> {
     }
 
     /**
-     * Sets the Authorization header with a basic authentication encoding.
-     *
-     * @param encoding to set in header
-     * @return this connection
-     */
-    public ServerConnection auth(String encoding) {
-        conn.setRequestProperty("Authorization", "Basic " + encoding);
-        return this;
-    }
-
-    /**
      * Sets the HTTP method to use in the connection
      *
      * @param method to use when connecting
@@ -105,10 +95,14 @@ public class ServerConnection<T extends Response> {
     public ServerConnection method(String method) {
         try {
             conn.setRequestMethod(method);
-        } catch (ProtocolException ignored) {}
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        }
+
         // tell the server we are sending form data if a POST request
         if (method.equals(Request.METHOD_POST))
             conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
         return this;
     }
 

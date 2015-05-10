@@ -45,6 +45,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
         super.onCreate(b);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_maps);
+        App.init(this);
 
         posts = getPosts();
 
@@ -78,15 +79,18 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
     }
 
     private List<Post> getPosts() {
-        ApiResponse response = Post.listRequest(this).sendInBackground();
+        ApiResponse response = Post.listRequest().sendInBackground();
         String error = null;
         if (response == null) {
+            // no connection
             error = getString(R.string.error_no_connection);
             error = String.format(error, App.getName());
         } else if (response.isError())
+            // server returned error
             error = response.getErrorDetail();
 
         if (error != null)
+            // display error
             Toast.makeText(this, error, Toast.LENGTH_LONG).show();
 
         return response == null ? null : Post.parse((JSONArray) response.get());
@@ -125,7 +129,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        // start the post acivity
+        // start the post activity
         Intent intent = new Intent(this, PostDetailActivity.class);
         intent.putExtra(PostDetailActivity.EXTRA_POST, Post.getPostFor(marker));
         startActivity(intent);

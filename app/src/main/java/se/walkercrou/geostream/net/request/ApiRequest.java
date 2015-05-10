@@ -11,9 +11,6 @@ public class ApiRequest extends Request<ApiResponse> {
     // request URLs
     public static final String URL_POST_LIST = "/api/posts/";
     public static final String URL_POST_DETAIL = "/api/posts/%s/";
-    public static final String URL_USER_LIST = "/api/users/";
-    public static final String URL_USER_DETAIL = "/api/users/%s/";
-    public static final String URL_SIGNUP = "/api/signup/";
 
     public ApiRequest(String method, String relativeUrl) {
         super(method, relativeUrl);
@@ -29,11 +26,6 @@ public class ApiRequest extends Request<ApiResponse> {
     }
 
     @Override
-    public ApiRequest setAuthorization(String username, String password) {
-        return (ApiRequest) super.setAuthorization(username, password);
-    }
-
-    @Override
     public ApiResponse send() {
         // attach query string if GET method
         String url = relativeUrl;
@@ -43,8 +35,6 @@ public class ApiRequest extends Request<ApiResponse> {
         // create server connection
         ServerConnection<ApiResponse> conn = new ServerConnection<>(url, ApiResponse.class)
                 .method(method);
-        if (authEncoding != null)
-            conn.auth(authEncoding);
 
         // write form data if posting and have data
         if (method.equals(METHOD_POST) && !data.isEmpty())
@@ -53,6 +43,7 @@ public class ApiRequest extends Request<ApiResponse> {
         ApiResponse response = conn.connect();
         if (response != null)
             App.d(response);
+        conn.disconnect();
         return response;
     }
 }
