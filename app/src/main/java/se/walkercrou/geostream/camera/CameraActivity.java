@@ -1,8 +1,6 @@
 package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Camera;
 import android.location.Location;
@@ -21,15 +19,18 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.melnykov.fab.FloatingActionButton;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-import se.walkercrou.geostream.App;
+import java.util.Arrays;
+
 import se.walkercrou.geostream.MapActivity;
+import se.walkercrou.geostream.PostDetailActivity;
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.net.Post;
 import se.walkercrou.geostream.net.response.ApiResponse;
+import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.DialogUtil;
 
 /**
  * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to
@@ -38,7 +39,8 @@ import se.walkercrou.geostream.net.response.ApiResponse;
 @SuppressWarnings("deprecation")
 public class CameraActivity extends Activity implements View.OnClickListener,
         View.OnLongClickListener, View.OnTouchListener, Camera.PictureCallback,
-        Camera.ShutterCallback, Camera.PreviewCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+        Camera.ShutterCallback, Camera.PreviewCallback, GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
     // camera stuff
     private static final long PROGRESS_PAUSE_TIME = 100; // 10 seconds
@@ -48,7 +50,6 @@ public class CameraActivity extends Activity implements View.OnClickListener,
     private ProgressBar recordingProgress;
     private int recordingProgressStatus = 0;
     private byte[] imageData;
-    private final List<byte[]> videoFrames = new ArrayList<>();
 
     // ui stuff
     private final Handler handler = new Handler();
@@ -66,7 +67,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
         setContentView(R.layout.activity_camera);
 
         // connect to location api
-        googleApiClient = App.buildGoogleApiClient(this, this, this);
+        googleApiClient = AppUtil.buildGoogleApiClient(this, this, this);
         googleApiClient.connect();
 
         cancelBtn = findViewById(R.id.btn_cancel);
@@ -97,13 +98,13 @@ public class CameraActivity extends Activity implements View.OnClickListener,
 
     @Override
     public void onClick(View v) {
-        App.d("Record button clicked");
+        AppUtil.d("Record button clicked");
         cam.takePicture(this, this, this);
     }
 
     @Override
     public boolean onLongClick(View v) {
-        App.d("Record button long clicked");
+        AppUtil.d("Record button long clicked");
         startRecording();
         return true;
     }
@@ -124,7 +125,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
         if (data == null)
             return;
         imageData = data;
-        App.d(Arrays.toString(data));
+        AppUtil.d("imageData = " + Arrays.toString(data));
         showPlaybackButtons();
     }
 
@@ -134,17 +135,14 @@ public class CameraActivity extends Activity implements View.OnClickListener,
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        // called every frame while the preview is running
-        if (recording)
-            videoFrames.add(data);
     }
 
     @Override
     public void onConnected(Bundle bundle) {
         // connected to location api
-        App.d("Connected to location API");
+        AppUtil.d("Connected to location API");
         lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-        App.d(String.format("Last location : %s,%s",
+        AppUtil.d(String.format("Last location : %s,%s",
                 lastLocation.getLatitude(), lastLocation.getLongitude()));
     }
 
@@ -169,27 +167,31 @@ public class CameraActivity extends Activity implements View.OnClickListener,
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         if (netInfo == null || !netInfo.isConnected())
-            return;
-
-        // send post
-        Post post = new Post(lastLocation, imageData);
-        ApiResponse response = post.createRequest().sendInBackground();
-        if (response == null || response.isError())
-            showSendPostErrorDialog();
+            // no network connection
+            DialogUtil.connectionError(this, (dialog, which) -> sendPost(null)).show();
         else
-            startActivity(new Intent(this, MapActivity.class));
+            createPost();
     }
 
-    private void showSendPostErrorDialog() {
-        // called when a post failed to be sent to the server
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String message = String.format(getString(R.string.error_send_post), App.getName());
-        builder.setTitle(R.string.error).setMessage(message);
-        builder.setNeutralButton(R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+    private void createPost() {
+        Post post = new Post(lastLocation, imageData);
+        ApiResponse response = post.postRequest().sendInBackground();
+        if (response == null || response.isError())
+            // could not connect to server or server responded with an error
+            DialogUtil.sendPostError(this).show();
+        else {
+            try {
+                // set file location of the post
+                post.setFileUrl(((JSONObject) response.get()).getString(Post.PARAM_FILE));
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        }).create().show();
+            // open the new post
+            AppUtil.d("Opening new post");
+            Intent intent = new Intent(this, PostDetailActivity.class);
+            intent.putExtra(PostDetailActivity.EXTRA_POST, post);
+            startActivity(intent);
+        }
     }
 
     private void showPreviewButtons() {
@@ -225,44 +227,24 @@ public class CameraActivity extends Activity implements View.OnClickListener,
             cam = Camera.open();
         } catch (Exception e) {
             // show error dialog
-            showNoCameraErrorDialog();
+            DialogUtil.openCameraError(this).show();
         }
     }
 
-    private void showNoCameraErrorDialog() {
-        // called when the camera cannot be opened for some reason
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String msg = String.format(getString(R.string.error_no_camera), App.getName());
-        builder.setMessage(msg).setTitle(R.string.error);
-        builder.setPositiveButton(R.string.action_back, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                finish();
-            }
-        }).create().show();
-    }
-
     private void startRecording() {
-        // clear any remaining video
-        videoFrames.clear();
         recording = true;
-        App.d("Recording");
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                startProgressBar();
-            }
-        }).start();
+        AppUtil.d("Recording");
+        new Thread(this::startProgressBar).start();
     }
 
     private void stopRecording() {
         recording = false;
-        App.d("Done recording");
+        AppUtil.d("Done recording");
         startPlayback();
     }
 
     private void startPlayback() {
-        App.d("Playing back video");
+        AppUtil.d("Playing back video");
         showPlaybackButtons();
     }
 
@@ -278,12 +260,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
             }
 
             // update progress bar on ui thread
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    recordingProgress.setProgress(++recordingProgressStatus);
-                }
-            });
+            handler.post(() -> recordingProgress.setProgress(++recordingProgressStatus));
         }
 
         // set back to zero

@@ -1,7 +1,7 @@
 package se.walkercrou.geostream.net;
 
-import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -20,7 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.net.request.MediaRequest;
+import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.request.ApiRequest;
 import se.walkercrou.geostream.net.request.FileValue;
 import se.walkercrou.geostream.net.request.Request;
@@ -35,7 +36,7 @@ public class Post implements Parcelable {
     public static final String PARAM_FILE = "media_file";
     public static final String PARAM_IS_VIDEO = "is_video";
 
-    public static final String FILE_NAME = "media_file.bmp";
+    public static final String BASE_FILE_NAME = "media_file.bmp";
 
     // posts that have been placed on the map
     private static final Map<Marker, Post> mappedPosts = new HashMap<>();
@@ -43,14 +44,13 @@ public class Post implements Parcelable {
     private final Location location;
     private byte[] data;
     private String fileUrl;
-    private Bitmap image;
 
     public Post(Location location, byte[] data) {
         this.location = location;
         this.data = data;
     }
 
-    public Post(Location location, String fileUrl) {
+    private Post(Location location, String fileUrl) {
         this.location = location;
         this.fileUrl = fileUrl;
     }
@@ -92,18 +92,8 @@ public class Post implements Parcelable {
         return fileUrl;
     }
 
-    /**
-     * Returns true if this post's media has been downloaded from the server.
-     *
-     * @return true if cached
-     */
-    public boolean isCached() {
-        return image != null;
-    }
-
-    public boolean downloadImage(Context c) {
-        // TODO: download image from media url
-        return true;
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
     }
 
     /**
@@ -117,16 +107,20 @@ public class Post implements Parcelable {
         mappedPosts.put(marker, this);
     }
 
+    public MediaRequest mediaRequest() {
+        return new MediaRequest(fileUrl);
+    }
+
     /**
-     * Returns a CREATE {@link Request} for this Post.
+     * Returns a POST {@link Request} for this Post.
      *
-     * @return CREATE request
+     * @return POST request
      */
-    public ApiRequest createRequest() {
+    public ApiRequest postRequest() {
         return new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
                 .set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
-                .set(PARAM_FILE, new FileValue(FILE_NAME, data))
+                .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, data))
                 .set(PARAM_IS_VIDEO, isVideo());
     }
 
@@ -160,13 +154,13 @@ public class Post implements Parcelable {
         try {
             for (int i = 0; i < array.length(); i++) {
                 JSONObject jsonPost = array.getJSONObject(i);
-                Location loc = new Location(App.getName());
+                Location loc = new Location(AppUtil.getName());
                 loc.setLatitude(jsonPost.getDouble(PARAM_LAT));
                 loc.setLongitude(jsonPost.getDouble(PARAM_LNG));
                 posts.add(new Post(loc, jsonPost.getString(PARAM_FILE)));
             }
         } catch (JSONException e) {
-            App.e("An error occurred while parsing post data", e);
+            AppUtil.e("An error occurred while parsing post data", e);
         }
         return posts;
     }
@@ -176,7 +170,7 @@ public class Post implements Parcelable {
     public static final Parcelable.Creator<Post> CREATOR = new Creator<Post>() {
         @Override
         public Post createFromParcel(Parcel source) {
-            Location location = new Location(App.getName());
+            Location location = new Location(AppUtil.getName());
             location.setLatitude(source.readDouble());
             location.setLongitude(source.readDouble());
             return new Post(location, source.readString());

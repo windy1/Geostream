@@ -8,7 +8,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Map;
 
-import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.request.FileValue;
 import se.walkercrou.geostream.net.request.Request;
 import se.walkercrou.geostream.net.response.Response;
@@ -17,12 +17,12 @@ import se.walkercrou.geostream.net.response.Response;
  * Represents a connection to a Geostream server
  */
 public class ServerConnection<T extends Response> {
-    public static final String ROOT_URL = "http://10.245.69.125:8000";
+    public static final String ROOT_URL = "http://10.0.0.34:8000";
 
     // http request writing stuff
     private static final String crlf = "\r\n";
     private static final String twoHyphens = "--";
-    private static final String boundary = App.getName() + "FormBoundary";
+    private static final String boundary = AppUtil.getName() + "FormBoundary";
 
     private final String relativeUrl;
     private final Class<T> responseClass;
@@ -33,13 +33,13 @@ public class ServerConnection<T extends Response> {
         this.relativeUrl = relativeUrl;
         this.responseClass = responseClass;
 
-        // intialize the connection
+        // initialize the connection
         String uri = ROOT_URL + relativeUrl;
         try {
             URL url = new URL(uri);
             conn = (HttpURLConnection) url.openConnection();
         } catch (Exception e) {
-            App.e("An error occurred while trying to initialize a connection to the server", e);
+            AppUtil.e("An error occurred while trying to initialize a connection to the server", e);
         }
 
         // configure connection
@@ -60,21 +60,21 @@ public class ServerConnection<T extends Response> {
     public T connect() {
         try {
             // get input stream
-            App.d("Establishing connection to " + ROOT_URL + relativeUrl);
+            AppUtil.d("Establishing connection to " + ROOT_URL + relativeUrl);
             InputStream in;
             int code = conn.getResponseCode();
             if (isStatusError(code))
                 in = conn.getErrorStream();
             else
                 in = conn.getInputStream();
-            App.d("Connection established");
+            AppUtil.d("Connection established");
 
             // create response
             return responseClass.getConstructor(
                     int.class, String.class, InputStream.class
             ).newInstance(code, conn.getResponseMessage(), in);
         } catch (Exception e) {
-            App.e("An error occurred while trying to connect to the server", e);
+            AppUtil.e("An error occurred while trying to connect to the server", e);
             return null;
         }
     }
@@ -125,7 +125,7 @@ public class ServerConnection<T extends Response> {
             out.flush();
             out.close();
         } catch (Exception e) {
-            App.e("An error occurred while trying to write form data to the server", e);
+            AppUtil.e("An error occurred while trying to write form data to the server", e);
         }
     }
 

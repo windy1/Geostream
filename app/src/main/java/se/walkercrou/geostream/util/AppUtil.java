@@ -1,10 +1,12 @@
-package se.walkercrou.geostream;
+package se.walkercrou.geostream.util;
 
 import android.content.Context;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+
+import se.walkercrou.geostream.R;
 
 import static com.google.android.gms.common.api.GoogleApiClient.Builder;
 import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -13,11 +15,11 @@ import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFail
 /**
  * Helper class for convenience static functions
  */
-public final class App {
-    private static App instance;
+public final class AppUtil {
+    private static AppUtil instance;
     private String name;
 
-    private App(Context context) {
+    private AppUtil(Context context) {
         name = context.getString(R.string.app_name);
     }
 
@@ -28,7 +30,7 @@ public final class App {
      */
     public static void init(Context context) {
         if (instance == null)
-            instance = new App(context);
+            instance = new AppUtil(context);
     }
 
     /**

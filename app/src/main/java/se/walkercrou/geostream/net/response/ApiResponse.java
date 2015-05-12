@@ -8,7 +8,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.util.AppUtil;
 
 /**
  * Represents a response from the server's RESTful API.
@@ -33,7 +33,7 @@ public class ApiResponse extends Response {
             reader.close();
             in.close();
         } catch (Exception e) {
-            App.e("An error occurred while trying to read the JSON response from the server", e);
+            AppUtil.e("An error occurred while trying to read the JSON response from the server", e);
         }
 
         jsonString = builder.toString();
@@ -48,7 +48,7 @@ public class ApiResponse extends Response {
         try {
             return new JSONObject(jsonString).getString(ERROR_DETAIL);
         } catch (Exception e) {
-            App.e("An error occurred while trying to read the JSON error from the server", e);
+            AppUtil.e("An error occurred while trying to read the JSON error from the server", e);
             return null;
         }
     }
@@ -66,7 +66,7 @@ public class ApiResponse extends Response {
             }
             return obj != null ? obj : array;
         } catch (Exception e) {
-            App.e("An error occurred while reading a JSON response from the server", e);
+            AppUtil.e("An error occurred while reading a JSON response from the server", e);
             return null;
         }
     }

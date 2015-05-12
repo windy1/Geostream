@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.view.Window;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -25,6 +26,8 @@ import java.util.List;
 import se.walkercrou.geostream.camera.CameraActivity;
 import se.walkercrou.geostream.net.Post;
 import se.walkercrou.geostream.net.response.ApiResponse;
+import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.DialogUtil;
 
 /**
  * Main activity of application. Displays a map around your current location and displays nearby
@@ -44,22 +47,20 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-        setContentView(R.layout.activity_maps);
-        App.init(this);
+        setContentView(R.layout.activity_map);
+        AppUtil.init(this);
 
-        posts = getPosts();
-
-        // connect to location api
-        googleApiClient = App.buildGoogleApiClient(this, this, this);
+        // connect to location api, don't do anything else until we have the connection
+        googleApiClient = AppUtil.buildGoogleApiClient(this, this, this);
         googleApiClient.connect();
     }
 
     @Override
     public void onConnected(Bundle bundle) {
         // connected to location api
-        App.d("Connected to location API");
+        AppUtil.d("Connected to location API");
         lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-        App.d(String.format("Last location : %s,%s",
+        AppUtil.d(String.format("Last location : %s,%s",
                 lastLocation.getLatitude(), lastLocation.getLongitude()));
         // setup map
         setUpMapIfNeeded();
@@ -80,19 +81,12 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
 
     private List<Post> getPosts() {
         ApiResponse response = Post.listRequest().sendInBackground();
-        String error = null;
-        if (response == null) {
+        if (response == null)
             // no connection
-            error = getString(R.string.error_no_connection);
-            error = String.format(error, App.getName());
-        } else if (response.isError())
-            // server returned error
-            error = response.getErrorDetail();
-
-        if (error != null)
-            // display error
-            Toast.makeText(this, error, Toast.LENGTH_LONG).show();
-
+            DialogUtil.connectionError(this, (dialog, which) -> posts = getPosts()).show();
+        else if (response.isError())
+            // server responded with error
+            Toast.makeText(this, response.getErrorDetail(), Toast.LENGTH_LONG).show();
         return response == null ? null : Post.parse((JSONArray) response.get());
     }
 
@@ -121,6 +115,8 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
                 new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()), MAP_ZOOM
         ));
 
+        // retrieve the posts from the server and place them on the map
+        posts = getPosts();
         if (posts != null) {
             for (Post post : posts)
                 post.placeOnMap(map);
@@ -129,7 +125,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        // start the post activity
+        // start the post detail activity
         Intent intent = new Intent(this, PostDetailActivity.class);
         intent.putExtra(PostDetailActivity.EXTRA_POST, Post.getPostFor(marker));
         startActivity(intent);

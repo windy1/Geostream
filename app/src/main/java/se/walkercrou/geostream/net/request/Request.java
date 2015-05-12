@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import se.walkercrou.geostream.App;
+import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.response.Response;
 
 /**
@@ -60,7 +60,7 @@ public abstract class Request<T extends Response> {
                 }
             }.execute().get();
         } catch (Exception e) {
-            App.e("An error occurred while trying to send a request to the server.", e);
+            AppUtil.e("An error occurred while trying to send a request to the server.", e);
             return null;
         }
     }
