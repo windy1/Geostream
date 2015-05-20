@@ -8,10 +8,10 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Map;
 
-import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.request.FileValue;
 import se.walkercrou.geostream.net.request.Request;
 import se.walkercrou.geostream.net.response.Response;
+import se.walkercrou.geostream.util.AppUtil;
 
 /**
  * Represents a connection to a Geostream server

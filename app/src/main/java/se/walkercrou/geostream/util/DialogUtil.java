@@ -3,7 +3,6 @@ package se.walkercrou.geostream.util;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 
 import se.walkercrou.geostream.R;
 
@@ -19,7 +18,7 @@ public final class DialogUtil {
     /**
      * Returns a connection error {@link AlertDialog}.
      *
-     * @param c context
+     * @param c              context
      * @param tryAgainAction button action
      * @return alert dialog
      */
@@ -37,7 +36,8 @@ public final class DialogUtil {
      */
     public static AlertDialog sendPostError(Context c) {
         return errorBuilder(c, R.string.error_send_post)
-                .setPositiveButton(R.string.action_ok, (dialog, which) -> {}).create();
+                .setPositiveButton(R.string.action_ok, (dialog, which) -> {
+                }).create();
     }
 
     /**

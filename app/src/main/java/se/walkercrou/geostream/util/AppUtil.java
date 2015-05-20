@@ -65,7 +65,7 @@ public final class AppUtil {
     /**
      * Formats and logs a debug message.
      *
-     * @param msg to log
+     * @param msg    to log
      * @param params for formatting
      */
     public static void d(Object msg, Object... params) {
@@ -76,7 +76,7 @@ public final class AppUtil {
      * Logs an error message;
      *
      * @param msg to log
-     * @param t source of error
+     * @param t   source of error
      */
     public static void e(String msg, Throwable t) {
         Log.e(getName(), msg, t);
@@ -85,7 +85,7 @@ public final class AppUtil {
     /**
      * Returns a {@link GoogleApiClient} object for connecting to Google APIs.
      *
-     * @param context of activity
+     * @param context   of activity
      * @param callback1 for client to call
      * @param callback2 for client tp call
      * @return api client

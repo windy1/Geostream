@@ -24,9 +24,9 @@ import org.json.JSONObject;
 
 import java.util.Arrays;
 
+import se.walkercrou.geostream.Post;
 import se.walkercrou.geostream.PostDetailActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.Post;
 import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.util.DialogUtil;

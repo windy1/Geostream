@@ -76,6 +76,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
     public void openCamera(View view) {
         // called when the camera FAB is clicked, see respective layout file
         startActivity(new Intent(this, CameraActivity.class));
+        // TODO: slide camera in from right
     }
 
     private List<Post> getPosts() {

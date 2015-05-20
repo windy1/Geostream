@@ -1,8 +1,8 @@
 package se.walkercrou.geostream.net.request;
 
-import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.ServerConnection;
 import se.walkercrou.geostream.net.response.ApiResponse;
+import se.walkercrou.geostream.util.AppUtil;
 
 /**
  * Represents a request to the server's RESTful API.

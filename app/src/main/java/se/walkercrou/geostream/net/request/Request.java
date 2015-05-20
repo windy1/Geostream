@@ -7,8 +7,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.response.Response;
+import se.walkercrou.geostream.util.AppUtil;
 
 /**
  * Represents some request to send to the server
@@ -67,7 +67,7 @@ public abstract class Request<T extends Response> {
     /**
      * Sets the specified name value in the HTTP request.
      *
-     * @param name to set
+     * @param name  to set
      * @param value of name
      * @return this request
      */
