@@ -4,8 +4,6 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.os.Bundle;
 
-import se.walkercrou.geostream.net.Post;
-
 /**
  * Represents an activity that displays a post's details.
  */

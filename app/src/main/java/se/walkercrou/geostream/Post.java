@@ -1,4 +1,4 @@
-package se.walkercrou.geostream.net;
+package se.walkercrou.geostream;
 
 import android.location.Location;
 import android.os.Parcel;

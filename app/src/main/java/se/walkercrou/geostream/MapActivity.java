@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.view.Window;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -24,7 +23,6 @@ import org.json.JSONArray;
 import java.util.List;
 
 import se.walkercrou.geostream.camera.CameraActivity;
-import se.walkercrou.geostream.net.Post;
 import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.util.DialogUtil;
