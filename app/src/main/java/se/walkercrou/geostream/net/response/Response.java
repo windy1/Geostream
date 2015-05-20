@@ -5,7 +5,8 @@ import java.io.InputStream;
 import se.walkercrou.geostream.net.ServerConnection;
 
 /**
- * Represents a response from the server.
+ * Represents a response from the server. All implementations must implement an int, String,
+ * InputStream constructor.
  *
  * @param <T> type of object the server is returning
  */

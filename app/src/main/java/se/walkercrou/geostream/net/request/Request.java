@@ -22,16 +22,15 @@ public abstract class Request<T extends Response> {
 
     // HTTP status codes
     public static final int STATUS_OK = 200;
-    public static final int STATUS_UNAUTHORIZED = 401;
 
     public static final int FIRST_ERROR_STATUS = 300;
 
-    public final String method, relativeUrl;
+    public final String method, url;
     protected final Map<String, Object> data = new HashMap<>();
 
-    public Request(String method, String relativeUrl) {
+    public Request(String method, String url) {
         this.method = method;
-        this.relativeUrl = relativeUrl;
+        this.url = url;
     }
 
     public Request(String method, String relativeUrl, String lookup) {
@@ -96,12 +95,12 @@ public abstract class Request<T extends Response> {
     }
 
     /**
-     * Returns this request's URL relative to the server root URL.
+     * Returns the URL that this Request is intended for.
      *
-     * @return URL relative to server root URL
+     * @return url of request
      */
-    public String getRelativeUrl() {
-        return relativeUrl;
+    public String getUrl() {
+        return url;
     }
 
     /**

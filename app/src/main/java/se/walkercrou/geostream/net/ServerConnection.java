@@ -17,27 +17,27 @@ import se.walkercrou.geostream.net.response.Response;
  * Represents a connection to a Geostream server
  */
 public class ServerConnection<T extends Response> {
-    public static final String ROOT_URL = "http://10.0.0.34:8000";
-
     // http request writing stuff
     private static final String crlf = "\r\n";
     private static final String twoHyphens = "--";
     private static final String boundary = AppUtil.getName() + "FormBoundary";
 
-    private final String relativeUrl;
+    private final String url;
+    // the class to instantiate and return with input stream from server
+    // the response class object then handles the input stream and objectifies what ever is being
+    // returned
     private final Class<T> responseClass;
     private HttpURLConnection conn;
+    // for sending POST data
     private DataOutputStream out;
 
-    public ServerConnection(String relativeUrl, Class<T> responseClass) {
-        this.relativeUrl = relativeUrl;
+    public ServerConnection(String url, Class<T> responseClass) {
+        this.url = url;
         this.responseClass = responseClass;
 
         // initialize the connection
-        String uri = ROOT_URL + relativeUrl;
         try {
-            URL url = new URL(uri);
-            conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) new URL(url).openConnection();
         } catch (Exception e) {
             AppUtil.e("An error occurred while trying to initialize a connection to the server", e);
         }
@@ -60,7 +60,7 @@ public class ServerConnection<T extends Response> {
     public T connect() {
         try {
             // get input stream
-            AppUtil.d("Establishing connection to " + ROOT_URL + relativeUrl);
+            AppUtil.d("Establishing connection to " + url);
             InputStream in;
             int code = conn.getResponseCode();
             if (isStatusError(code))

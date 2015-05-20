@@ -18,9 +18,11 @@ import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFail
 public final class AppUtil {
     private static AppUtil instance;
     private String name;
+    private String serverUrl;
 
     private AppUtil(Context context) {
         name = context.getString(R.string.app_name);
+        serverUrl = context.getString(R.string.server_url);
     }
 
     /**
@@ -43,12 +45,31 @@ public final class AppUtil {
     }
 
     /**
+     * Returns the server URL to use in networking.
+     *
+     * @return server url
+     */
+    public static String getServerUrl() {
+        return instance.serverUrl;
+    }
+
+    /**
      * Logs a debug message.
      *
      * @param msg to log
      */
     public static void d(Object msg) {
         Log.d(getName(), msg.toString());
+    }
+
+    /**
+     * Formats and logs a debug message.
+     *
+     * @param msg to log
+     * @param params for formatting
+     */
+    public static void d(Object msg, Object... params) {
+        Log.d(getName(), String.format(msg.toString(), params));
     }
 
     /**

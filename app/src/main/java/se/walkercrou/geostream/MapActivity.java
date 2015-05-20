@@ -38,7 +38,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
 
     public static final int MAP_ZOOM = 17;
 
-    private GoogleMap map; // Might be null if Google Play services APK is not available.
+    private GoogleMap map;
     private GoogleApiClient googleApiClient;
     private Location lastLocation;
     private List<Post> posts;
@@ -60,30 +60,36 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
         // connected to location api
         AppUtil.d("Connected to location API");
         lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-        AppUtil.d(String.format("Last location : %s,%s",
-                lastLocation.getLatitude(), lastLocation.getLongitude()));
+        AppUtil.d("Last location : %s,%s", lastLocation.getLatitude(), lastLocation.getLongitude());
         // setup map
         setUpMapIfNeeded();
     }
 
     @Override
     public void onConnectionSuspended(int i) {
+        // TODO: Handle lost connection
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+        // TODO: Handle failed connection
     }
 
     public void openCamera(View view) {
-        // called when the camera FAB is clicked
+        // called when the camera FAB is clicked, see respective layout file
         startActivity(new Intent(this, CameraActivity.class));
     }
 
     private List<Post> getPosts() {
+        // get the json response from the server
         ApiResponse response = Post.listRequest().sendInBackground();
         if (response == null)
             // no connection
-            DialogUtil.connectionError(this, (dialog, which) -> posts = getPosts()).show();
+            DialogUtil.connectionError(this, (dialog, which) -> {
+                // dismiss dialog and try again
+                dialog.dismiss();
+                posts = getPosts();
+            }).show();
         else if (response.isError())
             // server responded with error
             Toast.makeText(this, response.getErrorDetail(), Toast.LENGTH_LONG).show();
@@ -106,8 +112,10 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
     private void setUpMap() {
         // configure map settings
         UiSettings ui = map.getUiSettings();
+        // lock map to position and do not allow zoom
         ui.setAllGesturesEnabled(false);
         ui.setMapToolbarEnabled(false);
+        // redirect all marker clicks to this
         map.setOnMarkerClickListener(this);
 
         // position on current location

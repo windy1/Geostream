@@ -1,7 +1,5 @@
 package se.walkercrou.geostream.net;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -20,11 +18,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import se.walkercrou.geostream.net.request.MediaRequest;
-import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.net.request.ApiRequest;
 import se.walkercrou.geostream.net.request.FileValue;
+import se.walkercrou.geostream.net.request.MediaRequest;
 import se.walkercrou.geostream.net.request.Request;
+import se.walkercrou.geostream.util.AppUtil;
 
 /**
  * Represents a Post that a user has created with a location and an image or video.
@@ -92,6 +90,11 @@ public class Post implements Parcelable {
         return fileUrl;
     }
 
+    /**
+     * Sets the URL where this Post's media file resides.
+     *
+     * @param fileUrl url of media file
+     */
     public void setFileUrl(String fileUrl) {
         this.fileUrl = fileUrl;
     }
@@ -107,16 +110,21 @@ public class Post implements Parcelable {
         mappedPosts.put(marker, this);
     }
 
+    /**
+     * Returns a new {@link MediaRequest} with this Post's fileUrl
+     *
+     * @return media request with file url
+     */
     public MediaRequest mediaRequest() {
         return new MediaRequest(fileUrl);
     }
 
     /**
-     * Returns a POST {@link Request} for this Post.
+     * Returns a {@link ApiRequest} that will create this Post on the server.
      *
-     * @return POST request
+     * @return request that will create this post on the server
      */
-    public ApiRequest postRequest() {
+    public ApiRequest createRequest() {
         return new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
                 .set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
@@ -125,7 +133,7 @@ public class Post implements Parcelable {
     }
 
     /**
-     * Returns a LIST {@link Request} for all Posts.
+     * Returns a {@link ApiRequest} that will return all Posts on the server.
      *
      * @return request to LIST all posts
      */

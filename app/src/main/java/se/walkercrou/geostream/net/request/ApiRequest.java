@@ -13,11 +13,11 @@ public class ApiRequest extends Request<ApiResponse> {
     public static final String URL_POST_DETAIL = "/api/posts/%s/";
 
     public ApiRequest(String method, String relativeUrl) {
-        super(method, relativeUrl);
+        super(method, AppUtil.getServerUrl() + relativeUrl);
     }
 
     public ApiRequest(String method, String relativeUrl, String lookup) {
-        super(method, relativeUrl, lookup);
+        super(method, AppUtil.getServerUrl() + relativeUrl, lookup);
     }
 
     @Override
@@ -28,7 +28,7 @@ public class ApiRequest extends Request<ApiResponse> {
     @Override
     public ApiResponse send() {
         // attach query string if GET method
-        String url = relativeUrl;
+        String url = this.url;
         if (method.equals(METHOD_GET) && !data.isEmpty())
             url += '?' + queryString();
 

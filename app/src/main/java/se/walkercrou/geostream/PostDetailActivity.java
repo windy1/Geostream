@@ -1,5 +1,6 @@
 package se.walkercrou.geostream;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.os.Bundle;
 
@@ -16,5 +17,13 @@ public class PostDetailActivity extends Activity {
     public void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_post_detail);
+
+        // enable up navigation
+        ActionBar ab = getActionBar();
+        if (ab != null)
+            ab.setDisplayHomeAsUpEnabled(true);
+
+        // get the passed post object
+        post = getIntent().getParcelableExtra(EXTRA_POST);
     }
 }

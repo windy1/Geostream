@@ -24,7 +24,6 @@ import org.json.JSONObject;
 
 import java.util.Arrays;
 
-import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.PostDetailActivity;
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.net.Post;
@@ -175,7 +174,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
 
     private void createPost() {
         Post post = new Post(lastLocation, imageData);
-        ApiResponse response = post.postRequest().sendInBackground();
+        ApiResponse response = post.createRequest().sendInBackground();
         if (response == null || response.isError())
             // could not connect to server or server responded with an error
             DialogUtil.sendPostError(this).show();
