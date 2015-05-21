@@ -81,22 +81,4 @@ public final class AppUtil {
     public static void e(String msg, Throwable t) {
         Log.e(getName(), msg, t);
     }
-
-    /**
-     * Returns a {@link GoogleApiClient} object for connecting to Google APIs.
-     *
-     * @param context   of activity
-     * @param callback1 for client to call
-     * @param callback2 for client tp call
-     * @return api client
-     */
-    public static GoogleApiClient buildGoogleApiClient(Context context,
-                                                       ConnectionCallbacks callback1,
-                                                       OnConnectionFailedListener callback2) {
-        return new Builder(context)
-                .addConnectionCallbacks(callback1)
-                .addOnConnectionFailedListener(callback2)
-                .addApi(LocationServices.API)
-                .build();
-    }
 }
