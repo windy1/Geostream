@@ -178,10 +178,9 @@ public class Post implements Parcelable {
     public static final Parcelable.Creator<Post> CREATOR = new Creator<Post>() {
         @Override
         public Post createFromParcel(Parcel source) {
-            Location location = new Location(AppUtil.getName());
-            location.setLatitude(source.readDouble());
-            location.setLongitude(source.readDouble());
-            return new Post(location, source.readString());
+            Location location = source.readParcelable(Location.class.getClassLoader());
+            String fileUrl = source.readString();
+            return new Post(location, fileUrl);
         }
 
         @Override
@@ -197,8 +196,7 @@ public class Post implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeDouble(location.getLatitude());
-        dest.writeDouble(location.getLongitude());
+        dest.writeParcelable(location, flags);
         dest.writeString(fileUrl);
     }
 }
