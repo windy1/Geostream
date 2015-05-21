@@ -8,9 +8,6 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -31,14 +28,12 @@ import se.walkercrou.geostream.util.DialogUtil;
  * Main activity of application. Displays a map around your current location and displays nearby
  * posts.
  */
-public class MapActivity extends FragmentActivity implements GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener {
+public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerClickListener {
 
     public static final int MAP_ZOOM = 17;
 
+    private LocationServices locationServices;
     private GoogleMap map;
-    private GoogleApiClient googleApiClient;
-    private Location lastLocation;
     private List<Post> posts;
 
     @Override
@@ -48,29 +43,10 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
         setContentView(R.layout.activity_map);
         AppUtil.init(this);
 
-        // connect to location api, don't do anything else until we have the connection
-        googleApiClient = AppUtil.buildGoogleApiClient(this, this, this);
-        googleApiClient.connect();
-    }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        // connected to location api
-        AppUtil.d("Connected to location API");
-        lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-        AppUtil.d("Last location : %s,%s", lastLocation.getLatitude(), lastLocation.getLongitude());
-        // setup map
-        setUpMapIfNeeded();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        // TODO: Handle lost connection
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        // TODO: Handle failed connection
+        // setup location services
+        locationServices = new LocationServices(this);
+        // setup map after connection
+        locationServices.connect(this::setUpMapIfNeeded);
     }
 
     public void openCamera(View view) {
@@ -118,6 +94,7 @@ public class MapActivity extends FragmentActivity implements GoogleApiClient.Con
         map.setOnMarkerClickListener(this);
 
         // position on current location
+        Location lastLocation = locationServices.getLastLocation();
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(
                 new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()), MAP_ZOOM
         ));

@@ -23,8 +23,7 @@ public final class DialogUtil {
      * @return alert dialog
      */
     public static AlertDialog connectionError(Context c, OnClickListener tryAgainAction) {
-        String msg = c.getString(R.string.error_no_connection);
-        msg = String.format(msg, AppUtil.getName());
+        String msg = c.getString(R.string.error_no_connection, AppUtil.getName());
         return errorBuilder(c, msg).setPositiveButton(R.string.action_try_again, tryAgainAction).create();
     }
 
@@ -47,9 +46,10 @@ public final class DialogUtil {
      * @return alert dialog
      */
     public static AlertDialog openCameraError(final Activity c) {
-        String msg = String.format(c.getString(R.string.error_no_camera), AppUtil.getName());
+        String msg = c.getString(R.string.error_no_camera, AppUtil.getName());
         return errorBuilder(c, msg)
-                .setPositiveButton(R.string.action_back, (dialog, which) -> c.finish()).create();
+                .setPositiveButton(R.string.action_back, (dialog, which) -> c.finish())
+                .create();
     }
 
     private static AlertDialog.Builder errorBuilder(Context c, int msgId) {

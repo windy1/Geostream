@@ -2,7 +2,6 @@ package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
 import android.hardware.Camera;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -13,13 +12,11 @@ import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.melnykov.fab.FloatingActionButton;
 
 import java.util.Arrays;
 
+import se.walkercrou.geostream.LocationServices;
 import se.walkercrou.geostream.Post;
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.util.AppUtil;
@@ -32,8 +29,7 @@ import se.walkercrou.geostream.util.DialogUtil;
 @SuppressWarnings("deprecation")
 public class CameraActivity extends Activity implements View.OnClickListener,
         View.OnLongClickListener, View.OnTouchListener, Camera.PictureCallback,
-        Camera.ShutterCallback, Camera.PreviewCallback, GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        Camera.ShutterCallback, Camera.PreviewCallback {
 
     // camera stuff
     private static final long PROGRESS_PAUSE_TIME = 100; // 10 seconds
@@ -50,18 +46,13 @@ public class CameraActivity extends Activity implements View.OnClickListener,
     private FloatingActionButton recordBtn, sendBtn;
 
     // location stuff
-    private GoogleApiClient googleApiClient;
-    private Location lastLocation;
+    private LocationServices locationServices;
 
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_camera);
-
-        // connect to location api
-        googleApiClient = AppUtil.buildGoogleApiClient(this, this, this);
-        googleApiClient.connect();
 
         cancelBtn = findViewById(R.id.btn_cancel);
         sendBtn = (FloatingActionButton) findViewById(R.id.fab_send);
@@ -75,6 +66,9 @@ public class CameraActivity extends Activity implements View.OnClickListener,
 
         // setup progress bar for recording video
         recordingProgress = (ProgressBar) findViewById(R.id.progress_bar);
+
+        locationServices = new LocationServices(this);
+        locationServices.connect();
     }
 
     @Override
@@ -130,23 +124,6 @@ public class CameraActivity extends Activity implements View.OnClickListener,
     public void onPreviewFrame(byte[] data, Camera camera) {
     }
 
-    @Override
-    public void onConnected(Bundle bundle) {
-        // connected to location api
-        AppUtil.d("Connected to location API");
-        lastLocation = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-        AppUtil.d(String.format("Last location : %s,%s",
-                lastLocation.getLatitude(), lastLocation.getLongitude()));
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-    }
-
     public void resumePreview(View view) {
         // called when the cancel button is clicked
         // resume the preview
@@ -163,7 +140,7 @@ public class CameraActivity extends Activity implements View.OnClickListener,
             // no network connection
             DialogUtil.connectionError(this, (dialog, which) -> sendPost(null)).show();
         else {
-            Post post = Post.create(lastLocation, imageData);
+            Post post = Post.create(locationServices.getLastLocation(), imageData);
             if (post == null)
                 DialogUtil.sendPostError(this).show();
             else

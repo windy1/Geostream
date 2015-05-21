@@ -3,6 +3,7 @@ package se.walkercrou.geostream;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.v4.view.ViewPager;
 
 /**
  * Represents an activity that displays a post's details.
@@ -16,12 +17,18 @@ public class PostDetailActivity extends Activity {
         super.onCreate(b);
         setContentView(R.layout.activity_post_detail);
 
-        // enable up navigation
-        ActionBar ab = getActionBar();
-        if (ab != null)
-            ab.setDisplayHomeAsUpEnabled(true);
+        setupActionBar();
 
         // get the passed post object
         post = getIntent().getParcelableExtra(EXTRA_POST);
+    }
+
+    private void setupActionBar() {
+        ActionBar bar = getActionBar();
+        if (bar == null)
+            return;
+
+        // enable up navigation
+        bar.setDisplayHomeAsUpEnabled(true);
     }
 }

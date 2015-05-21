@@ -204,7 +204,7 @@ public class Post implements Parcelable {
     public static final Parcelable.Creator<Post> CREATOR = new Creator<Post>() {
         @Override
         public Post createFromParcel(Parcel source) {
-            Location location = source.readParcelable(Location.class.getClassLoader());
+            Location location = source.readParcelable(null);
             String fileUrl = source.readString();
             return new Post(location, fileUrl);
         }
