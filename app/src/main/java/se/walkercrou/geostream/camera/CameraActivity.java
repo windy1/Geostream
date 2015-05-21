@@ -1,7 +1,6 @@
 package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.hardware.Camera;
 import android.location.Location;
 import android.net.ConnectivityManager;
@@ -19,15 +18,10 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.melnykov.fab.FloatingActionButton;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.Arrays;
 
 import se.walkercrou.geostream.Post;
-import se.walkercrou.geostream.PostDetailActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.util.DialogUtil;
 
@@ -168,28 +162,12 @@ public class CameraActivity extends Activity implements View.OnClickListener,
         if (netInfo == null || !netInfo.isConnected())
             // no network connection
             DialogUtil.connectionError(this, (dialog, which) -> sendPost(null)).show();
-        else
-            createPost();
-    }
-
-    private void createPost() {
-        Post post = new Post(lastLocation, imageData);
-        ApiResponse response = post.createRequest().sendInBackground();
-        if (response == null || response.isError())
-            // could not connect to server or server responded with an error
-            DialogUtil.sendPostError(this).show();
         else {
-            try {
-                // set file location of the post
-                post.setFileUrl(((JSONObject) response.get()).getString(Post.PARAM_FILE));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            // open the new post
-            AppUtil.d("Opening new post");
-            Intent intent = new Intent(this, PostDetailActivity.class);
-            intent.putExtra(PostDetailActivity.EXTRA_POST, post);
-            startActivity(intent);
+            Post post = Post.create(lastLocation, imageData);
+            if (post == null)
+                DialogUtil.sendPostError(this).show();
+            else
+                post.startActivity(this);
         }
     }
 

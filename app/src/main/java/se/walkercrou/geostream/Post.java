@@ -1,5 +1,7 @@
 package se.walkercrou.geostream;
 
+import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -22,7 +24,9 @@ import se.walkercrou.geostream.net.request.ApiRequest;
 import se.walkercrou.geostream.net.request.FileValue;
 import se.walkercrou.geostream.net.request.MediaRequest;
 import se.walkercrou.geostream.net.request.Request;
+import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.DialogUtil;
 
 /**
  * Represents a Post that a user has created with a location and an image or video.
@@ -43,7 +47,7 @@ public class Post implements Parcelable {
     private byte[] data;
     private String fileUrl;
 
-    public Post(Location location, byte[] data) {
+    private Post(Location location, byte[] data) {
         this.location = location;
         this.data = data;
     }
@@ -111,25 +115,47 @@ public class Post implements Parcelable {
     }
 
     /**
-     * Returns a new {@link MediaRequest} with this Post's fileUrl
+     * Starts this Post's detail activity from the specified context.
      *
-     * @return media request with file url
+     * @param c context to start from
      */
-    public MediaRequest mediaRequest() {
-        return new MediaRequest(fileUrl);
+    public void startActivity(Context c) {
+        Intent intent = new Intent(c, PostDetailActivity.class);
+        intent.putExtra(PostDetailActivity.EXTRA_POST, this);
+        c.startActivity(intent);
     }
 
     /**
-     * Returns a {@link ApiRequest} that will create this Post on the server.
+     * Creates a new Post locally and on the server at the specified location with the specified
+     * data.
      *
-     * @return request that will create this post on the server
+     * @param location of post
+     * @param data of post
+     * @return new post object
      */
-    public ApiRequest createRequest() {
-        return new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
+    public static Post create(Location location, byte[] data) {
+        // create on server
+        Post post = new Post(location, data);
+        ApiResponse response = new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
                 .set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, data))
-                .set(PARAM_IS_VIDEO, isVideo());
+                .set(PARAM_IS_VIDEO, post.isVideo())
+                .sendInBackground();
+
+        // check if successful
+        if (response == null || response.isError())
+            // could not connect to server or server responded with an error
+            return null;
+
+        try {
+            // update the file location of the post
+            post.setFileUrl(((JSONObject) response.get()).getString(Post.PARAM_FILE));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return post;
     }
 
     /**
