@@ -2,8 +2,6 @@ package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
 import android.hardware.Camera;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
@@ -16,7 +14,7 @@ import com.melnykov.fab.FloatingActionButton;
 
 import java.util.Arrays;
 
-import se.walkercrou.geostream.LocationServices;
+import se.walkercrou.geostream.LocationManager;
 import se.walkercrou.geostream.Post;
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.util.AppUtil;
@@ -27,8 +25,7 @@ import se.walkercrou.geostream.util.DialogUtil;
  * be posted.
  */
 @SuppressWarnings("deprecation")
-public class CameraActivity extends Activity implements View.OnClickListener,
-        View.OnLongClickListener, View.OnTouchListener, Camera.PictureCallback,
+public class CameraActivity extends Activity implements Camera.PictureCallback,
         Camera.ShutterCallback, Camera.PreviewCallback {
 
     // camera stuff
@@ -46,104 +43,95 @@ public class CameraActivity extends Activity implements View.OnClickListener,
     private FloatingActionButton recordBtn, sendBtn;
 
     // location stuff
-    private LocationServices locationServices;
+    private LocationManager locationManager;
 
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
+        // hide action bar
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_camera);
 
+        // ui references
         cancelBtn = findViewById(R.id.btn_cancel);
         sendBtn = (FloatingActionButton) findViewById(R.id.fab_send);
+        // hide the send button without an animation at start
         sendBtn.hide(false);
 
         // add listeners to record button
         recordBtn = (FloatingActionButton) findViewById(R.id.fab_record);
-        recordBtn.setOnClickListener(this);
-        recordBtn.setOnLongClickListener(this);
-        recordBtn.setOnTouchListener(this);
+        // start recording when the user presses and holds the button
+        recordBtn.setOnLongClickListener(this::startRecording);
+        // take a picture when the user clicks the button
+        recordBtn.setOnClickListener((view) -> cam.takePicture(this, this, this));
+        // stop recording if the user lets go of the button (and we are recording)
+        // if action == ACTION_UP && recording == true: stop recording
+        recordBtn.setOnTouchListener((view, event) -> event.getAction() == MotionEvent.ACTION_UP
+                && recording && stopRecording());
 
         // setup progress bar for recording video
         recordingProgress = (ProgressBar) findViewById(R.id.progress_bar);
 
-        locationServices = new LocationServices(this);
-        locationServices.connect();
+        // connect to location services
+        locationManager = new LocationManager(this);
+        locationManager.connect();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // resume the camera
         setupCamera();
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        // pause the camera
         preview.stopPreviewAndFreeCamera();
     }
 
     @Override
-    public void onClick(View v) {
-        AppUtil.d("Record button clicked");
-        cam.takePicture(this, this, this);
-    }
-
-    @Override
-    public boolean onLongClick(View v) {
-        AppUtil.d("Record button long clicked");
-        startRecording();
-        return true;
-    }
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        // called when the record button is touched
-        if (event.getAction() == MotionEvent.ACTION_UP && recording) {
-            // record button has been released while recording
-            stopRecording();
-            return true;
-        }
-        return false;
-    }
-
-    @Override
     public void onPictureTaken(byte[] data, Camera camera) {
+        // called twice sometimes, once with null data for some reason
         if (data == null)
             return;
         imageData = data;
         AppUtil.d("imageData = " + Arrays.toString(data));
+        // display the playback buttons
         showPlaybackButtons();
     }
 
     @Override
     public void onShutter() {
+        // called when the shutter sound is made
+        // do nothing
     }
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
+        // called every frame while the preview is running
     }
 
     public void resumePreview(View view) {
         // called when the cancel button is clicked
         // resume the preview
         cam.startPreview();
+        // show the normal buttons again
         showPreviewButtons();
     }
 
     public void sendPost(View view) {
         // called when the send button is clicked
         // check for network access
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        if (netInfo == null || !netInfo.isConnected())
-            // no network connection
+        if (AppUtil.isConnectedToNetwork(this))
             DialogUtil.connectionError(this, (dialog, which) -> sendPost(null)).show();
         else {
-            Post post = Post.create(locationServices.getLastLocation(), imageData);
-            if (post == null)
-                DialogUtil.sendPostError(this).show();
-            else
+            // try to create post
+            Post post = Post.create(locationManager.getLastLocation(), imageData,
+                    (error) -> DialogUtil.sendPostError(this).show());
+            // open activity if created
+            if (post != null)
                 post.startActivity(this);
         }
     }
@@ -185,16 +173,18 @@ public class CameraActivity extends Activity implements View.OnClickListener,
         }
     }
 
-    private void startRecording() {
+    private boolean startRecording(View view) {
         recording = true;
         AppUtil.d("Recording");
         new Thread(this::startProgressBar).start();
+        return true;
     }
 
-    private void stopRecording() {
+    private boolean stopRecording() {
         recording = false;
         AppUtil.d("Done recording");
         startPlayback();
+        return true;
     }
 
     private void startPlayback() {

@@ -3,7 +3,6 @@ package se.walkercrou.geostream;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
 
 /**
  * Represents an activity that displays a post's details.

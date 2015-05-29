@@ -10,8 +10,9 @@
     <string name="error_title">Uh oh!</string>
     <string name="error_no_camera">%s could not open your device\'s camera.</string>
     <string name="error_send_post">Something went wrong while uploading your post.</string>
-    <string name="error_no_connection">
-        %s could not connect to the server. Please check your network connection and try again.
-    </string>
+    <string name="error_no_connection">%s could not connect to the server. Please check your
+        internet connection and try again.</string>
     <string name="content_post">Post</string>
+    <string name="error_no_location">%s could not determine your location. Please check your
+        internet connection and try again.</string>
 </resources>

@@ -6,8 +6,10 @@ import android.os.Bundle;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 
 import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.DialogUtil;
 
 import static com.google.android.gms.common.api.GoogleApiClient.Builder;
 import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
@@ -15,13 +17,19 @@ import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFail
 
 /**
  * A wrapper class for handling the location services API.
+ *
+ * TODO: provide regular location updates
+ * TODO: move map with location updates
  */
-public class LocationServices implements ConnectionCallbacks, OnConnectionFailedListener{
+public class LocationManager implements ConnectionCallbacks, OnConnectionFailedListener{
     private GoogleApiClient client;
     private Location lastLocation;
     private Runnable callback;
+    private Context c;
 
-    public LocationServices(Context c) {
+    public LocationManager(Context c) {
+        this.c = c;
+        // build google api client
         client = new Builder(c)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -58,7 +66,7 @@ public class LocationServices implements ConnectionCallbacks, OnConnectionFailed
     @Override
     public void onConnected(Bundle bundle) {
         AppUtil.d("Connected to location services API");
-        lastLocation = com.google.android.gms.location.LocationServices.FusedLocationApi.getLastLocation(client);
+        lastLocation = LocationServices.FusedLocationApi.getLastLocation(client);
         AppUtil.d("Last location : %s,%s", lastLocation.getLatitude(), lastLocation.getLongitude());
         if (callback != null)
             callback.run();
@@ -66,11 +74,15 @@ public class LocationServices implements ConnectionCallbacks, OnConnectionFailed
 
     @Override
     public void onConnectionSuspended(int i) {
-        // TODO: Handle lost connection
+        showLocationErrorDialog();
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-        // TODO: Handle failed connection
+        showLocationErrorDialog();
+    }
+
+    private void showLocationErrorDialog() {
+        DialogUtil.locationError(c, (dialog, which) -> connect(callback)).show();
     }
 }

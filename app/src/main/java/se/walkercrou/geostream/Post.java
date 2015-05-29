@@ -22,11 +22,10 @@ import java.util.Map;
 
 import se.walkercrou.geostream.net.request.ApiRequest;
 import se.walkercrou.geostream.net.request.FileValue;
-import se.walkercrou.geostream.net.request.MediaRequest;
 import se.walkercrou.geostream.net.request.Request;
 import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.AppUtil;
-import se.walkercrou.geostream.util.DialogUtil;
+import se.walkercrou.geostream.util.ErrorCallback;
 
 /**
  * Represents a Post that a user has created with a location and an image or video.
@@ -126,16 +125,16 @@ public class Post implements Parcelable {
     }
 
     /**
-     * Creates a new Post locally and on the server at the specified location with the specified
-     * data.
+     * Creates and returns a new Post object and sends a creation request to the server.
      *
      * @param location of post
-     * @param data of post
+     * @param data media data
+     * @param callback error callback
      * @return new post object
      */
-    public static Post create(Location location, byte[] data) {
-        // create on server
+    public static Post create(Location location, byte[] data, ErrorCallback callback) {
         Post post = new Post(location, data);
+        // create on server
         ApiResponse response = new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
                 .set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
@@ -144,9 +143,13 @@ public class Post implements Parcelable {
                 .sendInBackground();
 
         // check if successful
-        if (response == null || response.isError())
-            // could not connect to server or server responded with an error
+        if (response == null) {
+            callback.onError(null);
             return null;
+        } else if (response.isError()) {
+            callback.onError(response.getErrorDetail());
+            return null;
+        }
 
         try {
             // update the file location of the post
@@ -159,12 +162,25 @@ public class Post implements Parcelable {
     }
 
     /**
-     * Returns a {@link ApiRequest} that will return all Posts on the server.
+     * Returns a list of all Posts on the server.
      *
-     * @return request to LIST all posts
+     * @param callback error callback
+     * @return list of all posts
      */
-    public static ApiRequest listRequest() {
-        return new ApiRequest(Request.METHOD_GET, ApiRequest.URL_POST_LIST);
+    public static List<Post> all(ErrorCallback callback) {
+        // send request
+        ApiResponse response = new ApiRequest(Request.METHOD_GET, ApiRequest.URL_POST_LIST)
+                .sendInBackground();
+
+        // check response
+        if (response == null)
+            // no connection
+            callback.onError(null);
+        else if (response.isError())
+            callback.onError(response.getErrorDetail());
+
+        // return results (if any)
+        return response != null ? parse((JSONArray) response.get()) : null;
     }
 
     /**
@@ -177,13 +193,7 @@ public class Post implements Parcelable {
         return mappedPosts.get(marker);
     }
 
-    /**
-     * Returns a list of posts from the given JSON input.
-     *
-     * @param array of posts in json format
-     * @return post objects
-     */
-    public static List<Post> parse(JSONArray array) {
+    private static List<Post> parse(JSONArray array) {
         List<Post> posts = new ArrayList<>(array.length());
         try {
             for (int i = 0; i < array.length(); i++) {

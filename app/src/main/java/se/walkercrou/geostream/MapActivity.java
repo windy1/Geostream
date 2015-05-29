@@ -15,12 +15,9 @@ import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 
-import org.json.JSONArray;
-
 import java.util.List;
 
 import se.walkercrou.geostream.camera.CameraActivity;
-import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.AppUtil;
 import se.walkercrou.geostream.util.DialogUtil;
 
@@ -32,43 +29,38 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     public static final int MAP_ZOOM = 17;
 
-    private LocationServices locationServices;
+    private LocationManager locationManager;
     private GoogleMap map;
     private List<Post> posts;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        // hide action bar
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_map);
+        // initialize singleton utility class
         AppUtil.init(this);
 
         // setup location services
-        locationServices = new LocationServices(this);
-        // setup map after connection
-        locationServices.connect(this::setUpMapIfNeeded);
+        locationManager = new LocationManager(this);
+        // wait for api connection to setup the map
+        locationManager.connect(this::setUpMapIfNeeded);
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        // start the post detail activity
+        Intent intent = new Intent(this, PostDetailActivity.class);
+        intent.putExtra(PostDetailActivity.EXTRA_POST, Post.getPostFor(marker));
+        startActivity(intent);
+        return true;
     }
 
     public void openCamera(View view) {
         // called when the camera FAB is clicked, see respective layout file
         startActivity(new Intent(this, CameraActivity.class));
-        // TODO: slide camera in from right
-    }
-
-    private List<Post> getPosts() {
-        // get the json response from the server
-        ApiResponse response = Post.listRequest().sendInBackground();
-        if (response == null)
-            // no connection
-            DialogUtil.connectionError(this, (dialog, which) -> {
-                // dismiss dialog and try again
-                dialog.dismiss();
-                posts = getPosts();
-            }).show();
-        else if (response.isError())
-            // server responded with error
-            Toast.makeText(this, response.getErrorDetail(), Toast.LENGTH_LONG).show();
-        return response == null ? null : Post.parse((JSONArray) response.get());
+        // TODO: animation
     }
 
     private void setUpMapIfNeeded() {
@@ -94,25 +86,31 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         map.setOnMarkerClickListener(this);
 
         // position on current location
-        Location lastLocation = locationServices.getLastLocation();
+        Location lastLocation = locationManager.getLastLocation();
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(
                 new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()), MAP_ZOOM
         ));
 
         // retrieve the posts from the server and place them on the map
-        posts = getPosts();
+        getPosts();
         if (posts != null) {
             for (Post post : posts)
                 post.placeOnMap(map);
         }
     }
 
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        // start the post detail activity
-        Intent intent = new Intent(this, PostDetailActivity.class);
-        intent.putExtra(PostDetailActivity.EXTRA_POST, Post.getPostFor(marker));
-        startActivity(intent);
-        return true;
+    private void getPosts() {
+        posts = Post.all((error) -> {
+            if (error == null)
+                // no connection
+                DialogUtil.connectionError(this, (dialog, which) -> {
+                    // dismiss dialog and try again
+                    dialog.dismiss();
+                    getPosts();
+                }).show();
+            else
+                // server responded with error, toast it
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+        });
     }
 }

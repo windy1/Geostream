@@ -1,19 +1,14 @@
 package se.walkercrou.geostream.util;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
-
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 
 import se.walkercrou.geostream.R;
 
-import static com.google.android.gms.common.api.GoogleApiClient.Builder;
-import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-
 /**
- * Helper class for convenience static functions
+ * Helper class for convenience static functions related to application information
  */
 public final class AppUtil {
     private static AppUtil instance;
@@ -80,5 +75,18 @@ public final class AppUtil {
      */
     public static void e(String msg, Throwable t) {
         Log.e(getName(), msg, t);
+    }
+
+    /**
+     * Returns true if the app is connected to the network.
+     *
+     * @param c context
+     * @return true if connected
+     */
+    public static boolean isConnectedToNetwork(Context c) {
+        ConnectivityManager cm
+                = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnected();
     }
 }

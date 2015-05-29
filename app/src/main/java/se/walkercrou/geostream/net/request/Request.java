@@ -55,6 +55,13 @@ public abstract class Request<T extends Response> {
             return new AsyncTask<Void, Void, T>() {
                 @Override
                 protected T doInBackground(Void... params) {
+                    // simulate some latency
+                    // TODO: remove this for production
+                    try {
+                        Thread.sleep(3000);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     return send();
                 }
             }.execute().get();

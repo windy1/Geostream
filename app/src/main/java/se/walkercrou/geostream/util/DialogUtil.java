@@ -24,7 +24,9 @@ public final class DialogUtil {
      */
     public static AlertDialog connectionError(Context c, OnClickListener tryAgainAction) {
         String msg = c.getString(R.string.error_no_connection, AppUtil.getName());
-        return errorBuilder(c, msg).setPositiveButton(R.string.action_try_again, tryAgainAction).create();
+        return errorBuilder(c, msg)
+                .setPositiveButton(R.string.action_try_again, tryAgainAction)
+                .create();
     }
 
     /**
@@ -35,8 +37,8 @@ public final class DialogUtil {
      */
     public static AlertDialog sendPostError(Context c) {
         return errorBuilder(c, R.string.error_send_post)
-                .setPositiveButton(R.string.action_ok, (dialog, which) -> {
-                }).create();
+                .setPositiveButton(R.string.action_ok, (dialog, which) -> {})
+                .create();
     }
 
     /**
@@ -49,6 +51,20 @@ public final class DialogUtil {
         String msg = c.getString(R.string.error_no_camera, AppUtil.getName());
         return errorBuilder(c, msg)
                 .setPositiveButton(R.string.action_back, (dialog, which) -> c.finish())
+                .create();
+    }
+
+    /**
+     * Returns a dialog to display when an error occurs while trying to get the device's location.
+     *
+     * @param c context
+     * @param tryAgainAction action if user presses try again
+     * @return alert dialog
+     */
+    public static AlertDialog locationError(Context c, OnClickListener tryAgainAction) {
+        String msg = c.getString(R.string.error_no_location, AppUtil.getName());
+        return errorBuilder(c, msg)
+                .setPositiveButton(R.string.action_try_again, tryAgainAction)
                 .create();
     }
 
