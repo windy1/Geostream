@@ -21,9 +21,8 @@ import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFail
  * TODO: provide regular location updates
  * TODO: move map with location updates
  */
-public class LocationManager implements ConnectionCallbacks, OnConnectionFailedListener{
+public class LocationManager implements ConnectionCallbacks, OnConnectionFailedListener {
     private GoogleApiClient client;
-    private Location lastLocation;
     private Runnable callback;
     private Context c;
 
@@ -60,14 +59,12 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
      * @return last location
      */
     public Location getLastLocation() {
-        return lastLocation;
+        return LocationServices.FusedLocationApi.getLastLocation(client);
     }
 
     @Override
     public void onConnected(Bundle bundle) {
         AppUtil.d("Connected to location services API");
-        lastLocation = LocationServices.FusedLocationApi.getLastLocation(client);
-        AppUtil.d("Last location : %s,%s", lastLocation.getLatitude(), lastLocation.getLongitude());
         if (callback != null)
             callback.run();
     }

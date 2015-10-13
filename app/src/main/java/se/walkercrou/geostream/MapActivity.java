@@ -29,31 +29,28 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     public static final int MAP_ZOOM = 17;
 
-    private LocationManager locationManager;
     private GoogleMap map;
     private List<Post> posts;
+    private LocationManager locationManager;
 
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+
         // hide action bar
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_map);
+
         // initialize singleton utility class
         AppUtil.init(this);
 
-        // setup location services
         locationManager = new LocationManager(this);
-        // wait for api connection to setup the map
         locationManager.connect(this::setUpMapIfNeeded);
     }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        // start the post detail activity
-        Intent intent = new Intent(this, PostDetailActivity.class);
-        intent.putExtra(PostDetailActivity.EXTRA_POST, Post.getPostFor(marker));
-        startActivity(intent);
+        openPost(marker);
         return true;
     }
 
@@ -61,6 +58,13 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         // called when the camera FAB is clicked, see respective layout file
         startActivity(new Intent(this, CameraActivity.class));
         // TODO: animation
+    }
+
+    private void openPost(Marker marker) {
+        // start the post detail activity
+        Intent intent = new Intent(this, PostDetailActivity.class);
+        intent.putExtra(PostDetailActivity.EXTRA_POST, Post.getPostFor(marker));
+        startActivity(intent);
     }
 
     private void setUpMapIfNeeded() {
@@ -85,12 +89,19 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         // redirect all marker clicks to this
         map.setOnMarkerClickListener(this);
 
+        // setup location updates
+        map.setMyLocationEnabled(true);
+
         // position on current location
-        Location lastLocation = locationManager.getLastLocation();
+        Location location = locationManager.getLastLocation();
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()), MAP_ZOOM
+                new LatLng(location.getLatitude(), location.getLongitude()), MAP_ZOOM
         ));
 
+        placePosts();
+    }
+
+    private void placePosts() {
         // retrieve the posts from the server and place them on the map
         getPosts();
         if (posts != null) {

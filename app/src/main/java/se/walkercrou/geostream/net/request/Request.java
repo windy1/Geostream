@@ -58,7 +58,7 @@ public abstract class Request<T extends Response> {
                     // simulate some latency
                     // TODO: remove this for production
                     try {
-                        Thread.sleep(3000);
+                        Thread.sleep(2000);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
