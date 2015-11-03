@@ -2,7 +2,7 @@ package se.walkercrou.geostream.net.request;
 
 import se.walkercrou.geostream.net.ServerConnection;
 import se.walkercrou.geostream.net.response.MediaResponse;
-import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.G;
 
 /**
  * A request for a media resource on the server.
@@ -21,7 +21,7 @@ public class MediaRequest extends Request<MediaResponse> {
         // send request and receive response
         MediaResponse response = conn.connect();
         if (response != null)
-            AppUtil.d(response);
+            G.d(response);
         conn.disconnect();
         return response;
     }

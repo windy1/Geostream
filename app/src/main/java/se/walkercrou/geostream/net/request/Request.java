@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import se.walkercrou.geostream.net.response.Response;
-import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.G;
 
 /**
  * Represents some request to send to the server
@@ -19,6 +19,7 @@ public abstract class Request<T extends Response> {
     // HTTP allowed methods
     public static final String METHOD_POST = "POST";
     public static final String METHOD_GET = "GET";
+    public static final String METHOD_DELETE = "DELETE";
 
     // HTTP status codes
     public static final int STATUS_OK = 200;
@@ -27,6 +28,7 @@ public abstract class Request<T extends Response> {
 
     public final String method, url;
     protected final Map<String, Object> data = new HashMap<>();
+    protected final Map<String, String> extraHeaders = new HashMap<>();
 
     public Request(String method, String url) {
         this.method = method;
@@ -66,7 +68,7 @@ public abstract class Request<T extends Response> {
                 }
             }.execute().get();
         } catch (Exception e) {
-            AppUtil.e("An error occurred while trying to send a request to the server.", e);
+            G.e("An error occurred while trying to send a request to the server.", e);
             return null;
         }
     }
@@ -80,6 +82,11 @@ public abstract class Request<T extends Response> {
      */
     public Request set(String name, Object value) {
         data.put(name, value);
+        return this;
+    }
+
+    public Request addExtraHeader(String name, String value) {
+        extraHeaders.put(name, value);
         return this;
     }
 

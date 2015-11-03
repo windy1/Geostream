@@ -11,7 +11,7 @@ import java.util.Map;
 import se.walkercrou.geostream.net.request.FileValue;
 import se.walkercrou.geostream.net.request.Request;
 import se.walkercrou.geostream.net.response.Response;
-import se.walkercrou.geostream.util.AppUtil;
+import se.walkercrou.geostream.util.G;
 
 /**
  * Represents a connection to a Geostream server
@@ -20,7 +20,7 @@ public class ServerConnection<T extends Response> {
     // http request writing stuff
     private static final String crlf = "\r\n";
     private static final String twoHyphens = "--";
-    private static final String boundary = AppUtil.getName() + "FormBoundary";
+    private static final String boundary = G.app.name + "FormBoundary";
 
     private final String url;
     // the class to instantiate and return with input stream from server
@@ -39,7 +39,7 @@ public class ServerConnection<T extends Response> {
         try {
             conn = (HttpURLConnection) new URL(url).openConnection();
         } catch (Exception e) {
-            AppUtil.e("An error occurred while trying to initialize a connection to the server", e);
+            G.e("An error occurred while trying to initialize a connection to the server", e);
         }
 
         // configure connection
@@ -60,21 +60,21 @@ public class ServerConnection<T extends Response> {
     public T connect() {
         try {
             // get input stream
-            AppUtil.d("Establishing connection to " + url);
+            G.d("Establishing connection to " + url);
             InputStream in;
             int code = conn.getResponseCode();
             if (isStatusError(code))
                 in = conn.getErrorStream();
             else
                 in = conn.getInputStream();
-            AppUtil.d("Connection established");
+            G.d("Connection established");
 
             // create response
             return responseClass.getConstructor(
                     int.class, String.class, InputStream.class
             ).newInstance(code, conn.getResponseMessage(), in);
         } catch (Exception e) {
-            AppUtil.e("An error occurred while trying to connect to the server", e);
+            G.e("An error occurred while trying to connect to the server", e);
             return null;
         }
     }
@@ -118,6 +118,7 @@ public class ServerConnection<T extends Response> {
             out = new DataOutputStream(conn.getOutputStream());
 
             // write each data pair
+            G.d("Sending data : " + data.toString());
             for (String name : data.keySet())
                 writeData(name, data.get(name));
 
@@ -125,7 +126,7 @@ public class ServerConnection<T extends Response> {
             out.flush();
             out.close();
         } catch (Exception e) {
-            AppUtil.e("An error occurred while trying to write form data to the server", e);
+            G.e("An error occurred while trying to write form data to the server", e);
         }
     }
 

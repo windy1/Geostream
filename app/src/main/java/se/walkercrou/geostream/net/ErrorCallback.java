@@ -1,4 +1,4 @@
-package se.walkercrou.geostream.util;
+package se.walkercrou.geostream.net;
 
 /**
  * Functional interface for error handling.

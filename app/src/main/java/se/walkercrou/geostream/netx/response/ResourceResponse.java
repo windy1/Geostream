@@ -1,4 +1,4 @@
-package se.walkercrou.geostream.net.response;
+package se.walkercrou.geostream.netx.response;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -12,16 +12,15 @@ import java.io.InputStreamReader;
 import se.walkercrou.geostream.util.G;
 
 /**
- * Represents a response from the server's RESTful API. Can return either a {@link JSONObject} or
- * {@link JSONArray}.
+ * Represents a response from the server that has to do with server resources
  */
-public class ApiResponse extends Response {
-    public static final String ERROR_DETAIL = "detail";
+public class ResourceResponse extends Response<Object> {
+    private static final String FIELD_ERROR_DETAIL = "detail";
     private JSONObject obj;
     private JSONArray array;
 
-    public ApiResponse(int statusCode, String statusMessage, InputStream in) {
-        super(statusCode, statusMessage, in);
+    public ResourceResponse(InputStream in, int statusCode, String statusMessage) {
+        super(in, statusCode, statusMessage);
 
         StringBuilder builder = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -30,36 +29,37 @@ public class ApiResponse extends Response {
             // read response
             String ln;
             while ((ln = reader.readLine()) != null)
-                builder.append(ln).append('\n');
+                builder.append(ln).append("\n");
 
             // close reader and input stream
             reader.close();
             in.close();
 
-            // build json
+            // build json object
             obj = new JSONObject(builder.toString());
         } catch (IOException e) {
             G.e("An error occurred while trying to read the server's response", e);
         } catch (JSONException e) {
-            // not a JSONObject, try to build a JSONArray instead
+            // not a JSONObject try to build an array instead
             try {
                 array = new JSONArray(builder.toString());
             } catch (JSONException e1) {
-                // empty body
+                // empty response body
             }
         }
     }
 
     /**
-     * Returns the error detail returned by the server.
+     * Returns a detail message sent by the server if there was an error
      *
-     * @return error detail
+     * @return error message
      */
     public String getErrorDetail() {
         try {
-            return obj.getString(ERROR_DETAIL);
-        } catch (Exception e) {
-            G.e("An error occurred while trying to read the JSON error from the server", e);
+            if (obj != null)
+                return obj.getString(FIELD_ERROR_DETAIL);
+            return null;
+        } catch (JSONException e) {
             return null;
         }
     }

@@ -5,6 +5,27 @@
     android:layout_width="match_parent"
     android:id="@+id/map_parent">
 
+    <RelativeLayout
+        android:id="@+id/splash"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <ImageView
+            android:src="@color/primary"
+            android:contentDescription="@string/description_splash"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <TextView
+            android:gravity="center"
+            android:text="@string/app_name"
+            android:textStyle="bold"
+            android:textSize="40sp"
+            android:textColor="@android:color/white"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </RelativeLayout>
+
     <fragment xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -13,7 +34,7 @@
         android:name="com.google.android.gms.maps.SupportMapFragment" />
 
     <com.melnykov.fab.FloatingActionButton
-        android:id="@+id/fab_record"
+        android:id="@+id/fab_camera"
         android:onClick="openCamera"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

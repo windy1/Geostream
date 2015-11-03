@@ -14,11 +14,11 @@ import com.melnykov.fab.FloatingActionButton;
 
 import java.util.Arrays;
 
-import se.walkercrou.geostream.LocationManager;
-import se.walkercrou.geostream.Post;
+import se.walkercrou.geostream.util.LocationManager;
+import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.util.AppUtil;
-import se.walkercrou.geostream.util.DialogUtil;
+import se.walkercrou.geostream.util.G;
+import se.walkercrou.geostream.util.Dialogs;
 
 /**
  * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to
@@ -97,7 +97,7 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
         if (data == null)
             return;
         imageData = data;
-        AppUtil.d("imageData = " + Arrays.toString(data));
+        G.d("imageData = " + Arrays.toString(data));
         // display the playback buttons
         showPlaybackButtons();
     }
@@ -124,12 +124,12 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
     public void sendPost(View view) {
         // called when the send button is clicked
         // check for network access
-        if (AppUtil.isConnectedToNetwork(this))
-            DialogUtil.connectionError(this, (dialog, which) -> sendPost(null)).show();
+        if (!G.isConnectedToNetwork(this))
+            Dialogs.connectionError(this, (dialog, which) -> sendPost(null)).show();
         else {
             // try to create post
             Post post = Post.create(locationManager.getLastLocation(), imageData,
-                    (error) -> DialogUtil.sendPostError(this).show());
+                    (error) -> Dialogs.sendPostError(this).show());
             // open activity if created
             if (post != null)
                 post.startActivity(this);
@@ -169,26 +169,26 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
             cam = Camera.open();
         } catch (Exception e) {
             // show error dialog
-            DialogUtil.openCameraError(this).show();
+            Dialogs.openCameraError(this).show();
         }
     }
 
     private boolean startRecording(View view) {
         recording = true;
-        AppUtil.d("Recording");
+        G.d("Recording");
         new Thread(this::startProgressBar).start();
         return true;
     }
 
     private boolean stopRecording() {
         recording = false;
-        AppUtil.d("Done recording");
+        G.d("Done recording");
         startPlayback();
         return true;
     }
 
     private void startPlayback() {
-        AppUtil.d("Playing back video");
+        G.d("Playing back video");
         showPlaybackButtons();
     }
 

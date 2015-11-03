@@ -11,8 +11,8 @@ import static android.content.DialogInterface.OnClickListener;
 /**
  * Helper class for building dialogs to display.
  */
-public final class DialogUtil {
-    private DialogUtil() {
+public final class Dialogs {
+    private Dialogs() {
     }
 
     /**
@@ -23,7 +23,7 @@ public final class DialogUtil {
      * @return alert dialog
      */
     public static AlertDialog connectionError(Context c, OnClickListener tryAgainAction) {
-        String msg = c.getString(R.string.error_no_connection, AppUtil.getName());
+        String msg = c.getString(R.string.error_no_connection, G.app.name);
         return errorBuilder(c, msg)
                 .setPositiveButton(R.string.action_try_again, tryAgainAction)
                 .create();
@@ -48,7 +48,7 @@ public final class DialogUtil {
      * @return alert dialog
      */
     public static AlertDialog openCameraError(final Activity c) {
-        String msg = c.getString(R.string.error_no_camera, AppUtil.getName());
+        String msg = c.getString(R.string.error_no_camera, G.app.name);
         return errorBuilder(c, msg)
                 .setPositiveButton(R.string.action_back, (dialog, which) -> c.finish())
                 .create();
@@ -62,7 +62,7 @@ public final class DialogUtil {
      * @return alert dialog
      */
     public static AlertDialog locationError(Context c, OnClickListener tryAgainAction) {
-        String msg = c.getString(R.string.error_no_location, AppUtil.getName());
+        String msg = c.getString(R.string.error_no_location, G.app.name);
         return errorBuilder(c, msg)
                 .setPositiveButton(R.string.action_try_again, tryAgainAction)
                 .create();

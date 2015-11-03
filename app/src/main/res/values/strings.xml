@@ -15,4 +15,6 @@
     <string name="content_post">Post</string>
     <string name="error_no_location">%s could not determine your location. Please check your
         internet connection and try again.</string>
+    <string name="description_splash">Splash screen</string>
+    <string name="action_discard">Discard</string>
 </resources>

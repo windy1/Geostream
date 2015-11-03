@@ -1,6 +1,7 @@
 package se.walkercrou.geostream.util;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
@@ -10,14 +11,19 @@ import se.walkercrou.geostream.R;
 /**
  * Helper class for convenience static functions related to application information
  */
-public final class AppUtil {
-    private static AppUtil instance;
-    private String name;
-    private String serverUrl;
+public final class G {
+    public final String name;
+    public final String serverUrl;
+    public final SharedPreferences secrets;
+    public boolean splashed;
 
-    private AppUtil(Context context) {
+    public static G app;
+
+    private G(Context context) {
         name = context.getString(R.string.app_name);
         serverUrl = context.getString(R.string.server_url);
+        secrets = context.getSharedPreferences("ClientSecrets", Context.MODE_PRIVATE);
+        splashed = false;
     }
 
     /**
@@ -26,26 +32,8 @@ public final class AppUtil {
      * @param context of application
      */
     public static void init(Context context) {
-        if (instance == null)
-            instance = new AppUtil(context);
-    }
-
-    /**
-     * Returns the application's name.
-     *
-     * @return application name
-     */
-    public static String getName() {
-        return instance.name;
-    }
-
-    /**
-     * Returns the server URL to use in networking.
-     *
-     * @return server url
-     */
-    public static String getServerUrl() {
-        return instance.serverUrl;
+        if (app == null)
+            app = new G(context);
     }
 
     /**
@@ -54,7 +42,7 @@ public final class AppUtil {
      * @param msg to log
      */
     public static void d(Object msg) {
-        Log.d(getName(), msg.toString());
+        Log.d(app.name, msg.toString());
     }
 
     /**
@@ -64,7 +52,7 @@ public final class AppUtil {
      * @param params for formatting
      */
     public static void d(Object msg, Object... params) {
-        Log.d(getName(), String.format(msg.toString(), params));
+        Log.d(app.name, String.format(msg.toString(), params));
     }
 
     /**
@@ -74,7 +62,7 @@ public final class AppUtil {
      * @param t   source of error
      */
     public static void e(String msg, Throwable t) {
-        Log.e(getName(), msg, t);
+        Log.e(app.name, msg, t);
     }
 
     /**

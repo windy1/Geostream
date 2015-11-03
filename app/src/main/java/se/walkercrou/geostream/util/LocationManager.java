@@ -1,4 +1,4 @@
-package se.walkercrou.geostream;
+package se.walkercrou.geostream.util;
 
 import android.content.Context;
 import android.location.Location;
@@ -8,18 +8,12 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 
-import se.walkercrou.geostream.util.AppUtil;
-import se.walkercrou.geostream.util.DialogUtil;
-
 import static com.google.android.gms.common.api.GoogleApiClient.Builder;
 import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 
 /**
  * A wrapper class for handling the location services API.
- *
- * TODO: provide regular location updates
- * TODO: move map with location updates
  */
 public class LocationManager implements ConnectionCallbacks, OnConnectionFailedListener {
     private GoogleApiClient client;
@@ -32,7 +26,7 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
         client = new Builder(c)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
-                .addApi(com.google.android.gms.location.LocationServices.API)
+                .addApi(LocationServices.API)
                 .build();
     }
 
@@ -64,7 +58,7 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
 
     @Override
     public void onConnected(Bundle bundle) {
-        AppUtil.d("Connected to location services API");
+        G.d("Connected to location services API");
         if (callback != null)
             callback.run();
     }
@@ -80,6 +74,6 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
     }
 
     private void showLocationErrorDialog() {
-        DialogUtil.locationError(c, (dialog, which) -> connect(callback)).show();
+        Dialogs.locationError(c, (dialog, which) -> connect(callback)).show();
     }
 }
