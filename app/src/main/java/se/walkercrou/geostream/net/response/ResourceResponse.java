@@ -1,4 +1,4 @@
-package se.walkercrou.geostream.netx.response;
+package se.walkercrou.geostream.net.response;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 
 import se.walkercrou.geostream.util.G;
 
@@ -47,6 +48,10 @@ public class ResourceResponse extends Response<Object> {
                 // empty response body
             }
         }
+    }
+
+    public ResourceResponse(HttpURLConnection conn) throws IOException {
+        this(conn.getInputStream(), conn.getResponseCode(), conn.getResponseMessage());
     }
 
     /**

@@ -2,137 +2,64 @@ package se.walkercrou.geostream.net.request;
 
 import android.os.AsyncTask;
 
-import java.net.URLEncoder;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import se.walkercrou.geostream.net.response.Response;
 import se.walkercrou.geostream.util.G;
 
 /**
- * Represents some request to send to the server
+ * Represents a request to the Geostream server
  *
  * @param <T> type of response expected
  */
 public abstract class Request<T extends Response> {
-    // HTTP allowed methods
-    public static final String METHOD_POST = "POST";
-    public static final String METHOD_GET = "GET";
-    public static final String METHOD_DELETE = "DELETE";
+    public static final String ROUTE_ROOT = "/api/";
 
-    // HTTP status codes
-    public static final int STATUS_OK = 200;
-
-    public static final int FIRST_ERROR_STATUS = 300;
-
-    public final String method, url;
-    protected final Map<String, Object> data = new HashMap<>();
-    protected final Map<String, String> extraHeaders = new HashMap<>();
-
-    public Request(String method, String url) {
-        this.method = method;
-        this.url = url;
-    }
-
-    public Request(String method, String relativeUrl, String lookup) {
-        this(method, String.format(relativeUrl, lookup));
-    }
+    protected URL url;
 
     /**
-     * Sends this request to the server and returns the server's response as a {@link Response}.
+     * Creates a new Request with the specified route. The route is appended to the server url to
+     * build the request url.
      *
-     * @return server response
+     * @param route of request
      */
-    public abstract T send();
+    public Request(String route) throws MalformedURLException {
+        // ensure leading and trailing slashes
+        if (!route.startsWith("/")) route = '/' + route;
+        if (!route.endsWith("/")) route += '/';
+        url = new URL(G.app.serverUrl + route);
+    }
 
     /**
-     * Sends this request in another thread.
+     * Sends this request to the server
      *
-     * @return server response
-     * @see #send()
+     * @return response
+     * @throws IOException see implementing class
+     */
+    public abstract T send() throws IOException;
+
+    /**
+     * Sends this request in a background task.
+     *
+     * @return response
      */
     public T sendInBackground() {
         try {
+            G.d("Request: " + url);
             return new AsyncTask<Void, Void, T>() {
                 @Override
                 protected T doInBackground(Void... params) {
-                    // simulate some latency
-                    // TODO: remove this for production
                     try {
-                        Thread.sleep(2000);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                        return send();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                    return send();
                 }
             }.execute().get();
         } catch (Exception e) {
             G.e("An error occurred while trying to send a request to the server.", e);
-            return null;
-        }
-    }
-
-    /**
-     * Sets the specified name value in the HTTP request.
-     *
-     * @param name  to set
-     * @param value of name
-     * @return this request
-     */
-    public Request set(String name, Object value) {
-        data.put(name, value);
-        return this;
-    }
-
-    public Request addExtraHeader(String name, String value) {
-        extraHeaders.put(name, value);
-        return this;
-    }
-
-    /**
-     * Returns this request's HTTP data that will be sent to the server.
-     *
-     * @return data
-     */
-    public Map<String, Object> getData() {
-        return Collections.unmodifiableMap(data);
-    }
-
-    /**
-     * Returns the HTTP method that this request will use.
-     *
-     * @return HTTP method
-     */
-    public String getMethod() {
-        return method;
-    }
-
-    /**
-     * Returns the URL that this Request is intended for.
-     *
-     * @return url of request
-     */
-    public String getUrl() {
-        return url;
-    }
-
-    /**
-     * Returns a query string representation of this request's data.
-     *
-     * @return query string of request
-     */
-    public String queryString() {
-        try {
-            String q = "";
-            for (String name : data.keySet()) {
-                if (!q.isEmpty())
-                    q += '&';
-                q += name + "=" + URLEncoder.encode(data.get(name).toString(), "UTF-8");
-            }
-            return q;
-        } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }

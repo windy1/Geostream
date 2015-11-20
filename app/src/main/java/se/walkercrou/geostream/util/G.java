@@ -12,9 +12,13 @@ import se.walkercrou.geostream.R;
  * Helper class for convenience static functions related to application information
  */
 public final class G {
+    // Application name
     public final String name;
+    // Location of application server
     public final String serverUrl;
+    // Collection of "client_secrets" for Post manipulation
     public final SharedPreferences secrets;
+    // True if the splash screen has been displayed before
     public boolean splashed;
 
     public static G app;
@@ -53,6 +57,10 @@ public final class G {
      */
     public static void d(Object msg, Object... params) {
         Log.d(app.name, String.format(msg.toString(), params));
+    }
+
+    public static void dNoLn(Object msg) {
+        System.out.print(msg);
     }
 
     /**

@@ -128,7 +128,7 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
             Dialogs.connectionError(this, (dialog, which) -> sendPost(null)).show();
         else {
             // try to create post
-            Post post = Post.create(locationManager.getLastLocation(), imageData,
+            Post post = Post.create(locationManager.getLastLocation(), "image/jpeg", imageData,
                     (error) -> Dialogs.sendPostError(this).show());
             // open activity if created
             if (post != null)

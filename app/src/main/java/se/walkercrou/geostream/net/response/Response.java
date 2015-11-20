@@ -1,62 +1,87 @@
 package se.walkercrou.geostream.net.response;
 
+import java.io.IOException;
 import java.io.InputStream;
-
-import se.walkercrou.geostream.net.ServerConnection;
+import java.net.HttpURLConnection;
 
 /**
- * Represents a response from the server. All implementations must implement an int, String,
- * InputStream constructor.
+ * Represents a response from the server
  *
- * @param <T> type of object the server is returning
+ * @param <T> type of object returned
  */
 public abstract class Response<T> {
     protected final InputStream in;
     protected final int statusCode;
     protected final String statusMessage;
 
-    public Response(int statusCode, String statusMessage, InputStream in) {
+    // HTTP status codes
+    public static final int STATUS_OK = 200;
+    public static final int FIRST_ERROR_STATUS = 300;
+
+    /**
+     * Creates a new Response with the given HTTP InputStream and status code and message
+     *
+     * @param in input stream
+     * @param statusCode code of response
+     * @param statusMessage message of response
+     */
+    public Response(InputStream in, int statusCode, String statusMessage) {
         this.in = in;
         this.statusCode = statusCode;
         this.statusMessage = statusMessage;
     }
 
     /**
-     * Returns the object that the server returned.
+     * Creates a new Response from the given {@link HttpURLConnection}.
      *
-     * @return object server returned
+     * @param conn to parse
+     * @throws IOException if there is an error with the connection
+     */
+    public Response(HttpURLConnection conn) throws IOException {
+        this(conn.getInputStream(), conn.getResponseCode(), conn.getResponseMessage());
+    }
+
+    /**
+     * Returns the object returned by the server and parsed by the response object
+     *
+     * @return object parsed by client
      */
     public abstract T get();
 
     /**
-     * Returns the status code of the request.
+     * Returns the HTTP status code of the response
      *
-     * @return status code
+     * @return http status code
      */
     public int getStatusCode() {
         return statusCode;
     }
 
     /**
-     * Returns true if an error occurred.
+     * Returns true if there was an error in the request
      *
-     * @return true if error occurred
+     * @return true if error
      */
     public boolean isError() {
-        return ServerConnection.isStatusError(statusCode);
+        return isStatusError(statusCode);
     }
 
     /**
-     * Returns the status message returned by the server.
+     * Returns the HTTP status message of the response
      *
-     * @return status message
+     * @return http status message
      */
     public String getStatusMessage() {
         return statusMessage;
     }
 
-    @Override
-    public String toString() {
-        return "----- " + statusCode + " " + statusMessage + " -----";
+    /**
+     * Returns true if the specified status code is an error.
+     *
+     * @param code to check
+     * @return true if error
+     */
+    public static boolean isStatusError(int code) {
+        return code < STATUS_OK || code >= FIRST_ERROR_STATUS;
     }
 }

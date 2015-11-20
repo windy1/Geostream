@@ -11,9 +11,6 @@ import android.view.Window;
 
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.net.request.ApiRequest;
-import se.walkercrou.geostream.net.request.Request;
-import se.walkercrou.geostream.net.response.ApiResponse;
 import se.walkercrou.geostream.util.G;
 
 /**

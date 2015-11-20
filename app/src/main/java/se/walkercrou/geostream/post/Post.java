@@ -10,20 +10,22 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import se.walkercrou.geostream.net.ErrorCallback;
-import se.walkercrou.geostream.net.request.ApiRequest;
-import se.walkercrou.geostream.net.request.FileValue;
-import se.walkercrou.geostream.net.request.Request;
-import se.walkercrou.geostream.net.response.ApiResponse;
+import se.walkercrou.geostream.net.Resource;
+import se.walkercrou.geostream.net.request.ResourceCreateRequest;
+import se.walkercrou.geostream.net.request.ResourceCreateRequest.FileValue;
+import se.walkercrou.geostream.net.request.ResourceListRequest;
+import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.G;
 
 /**
  * Represents a Post that a user has created with a location and an image or video.
  */
-public class Post implements Parcelable {
+public class Post extends Resource implements Parcelable {
     // Post POST request parameters
     public static final String PARAM_ID = "id";
     public static final String PARAM_LAT = "lat";
@@ -124,19 +126,27 @@ public class Post implements Parcelable {
      * @param callback error callback
      * @return new post object
      */
-    public static Post create(Location location, byte[] data, ErrorCallback callback) {
+    public static Post create(Location location, String fileType, byte[] data, ErrorCallback callback) {
+        // create post object
         Post post = new Post(location, data);
-        // create on server
-        ApiResponse response = new ApiRequest(Request.METHOD_POST, ApiRequest.URL_POST_LIST)
-                .set(PARAM_LAT, location.getLatitude())
+
+        // post to server
+        ResourceResponse response = null;
+        try {
+            ResourceCreateRequest request = new ResourceCreateRequest(Resource.POSTS);
+            request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
-                .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, data))
-                .set(PARAM_IS_VIDEO, post.isVideo())
-                .sendInBackground();
+                .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, fileType, data))
+                .set(PARAM_IS_VIDEO, post.isVideo());
+            response = request.sendInBackground();
+        } catch (MalformedURLException e) {
+            // should never happen
+            e.printStackTrace();
+        }
 
         G.d(response);
 
-        // check if successful
+        // check server response
         if (response == null) {
             callback.onError(null);
             return null;
@@ -145,18 +155,12 @@ public class Post implements Parcelable {
             return null;
         }
 
-        // interpret json body
+        // read response
         try {
             JSONObject body = (JSONObject) response.get();
-
-            // set post id
-            post.id = body.getInt(PARAM_ID);
-
-            // save client secret
-            String secret = body.getString(PARAM_CLIENT_SECRET);
+            post.id = body.getInt(PARAM_ID); // set newly created id
+            String secret = body.getString(PARAM_CLIENT_SECRET); // get client secret
             G.app.secrets.edit().putString(Integer.toString(post.id), secret).commit();
-
-            // update the file location of the post
             post.setFileUrl(body.getString(PARAM_FILE));
         } catch (JSONException e) {
             e.printStackTrace();
@@ -172,19 +176,26 @@ public class Post implements Parcelable {
      * @return list of all posts
      */
     public static List<Post> all(ErrorCallback callback) {
-        // send request
-        ApiResponse response = new ApiRequest(Request.METHOD_GET, ApiRequest.URL_POST_LIST)
-                .sendInBackground();
+        // send request to server
+        ResourceResponse response = null;
+        try {
+            response = new ResourceListRequest(Resource.POSTS).sendInBackground();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
 
-        // check response
-        if (response == null)
-            // no connection
+        G.d(response);
+
+        // read response
+        if (response == null) {
             callback.onError(null);
-        else if (response.isError())
+            return null;
+        } else if (response.isError()) {
             callback.onError(response.getErrorDetail());
+            return null;
+        }
 
-        // return results (if any)
-        return response != null ? parse((JSONArray) response.get()) : null;
+        return parse((JSONArray) response.get());
     }
 
     private static List<Post> parse(JSONArray array) {

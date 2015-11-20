@@ -150,6 +150,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     }
 
     private List<Post> getPosts() {
+        // TODO: only get posts in vicinity
         return Post.all((error) -> {
             if (error == null)
                 // no connection
