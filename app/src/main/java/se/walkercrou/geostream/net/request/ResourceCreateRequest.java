@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import se.walkercrou.geostream.net.response.ResourceResponse;
-import se.walkercrou.geostream.util.G;
 
 /**
  * Represents a request to the server to create a new resource. This request uses
@@ -18,11 +17,6 @@ import se.walkercrou.geostream.util.G;
  * resource ID required).
  */
 public class ResourceCreateRequest extends ResourceListRequest {
-    // Form boundary to seperate parameter data
-    private final String boundary = "----" + G.app.name + "FormBoundary"
-        + System.currentTimeMillis() + '\n';
-    // Content type descriptor
-    private final String contentType = "multipart/form-data; boundary=" + boundary;
     // Internal map of data to write
     private final Map<String, Object> parameters = new HashMap<>();
 
@@ -44,42 +38,53 @@ public class ResourceCreateRequest extends ResourceListRequest {
 
     @Override
     public ResourceResponse send() throws IOException {
-        // configure connection for multipart/form-data
+        // obtain server connection
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setUseCaches(false);
+        conn.setDoOutput(true);
+
+        // form writing constants
+        final String lineEnd = "\r\n";
+        final String twoHyphens = "--";
+        final String boundary = "GeostreamFormBoundary" + System.currentTimeMillis();
+
+        // configure connection
         conn.setRequestMethod("POST");
-        conn.setRequestProperty("Connection", "keep-alive");
-        conn.setRequestProperty("Content-Type", contentType);
+        conn.setRequestProperty("Connection", "Keep-Alive");
+        conn.setRequestProperty("Cache-Control", "no-cache");
+        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
 
         // start request
-        conn.setDoOutput(true);
         DataOutputStream out = new DataOutputStream(conn.getOutputStream());
-        writeBytes(out, boundary);
+        // write form boundary (separates form data)
+        out.writeBytes(twoHyphens + boundary + lineEnd);
         for (String param : parameters.keySet()) {
-            writeBytes(out, "Content-Disposition: form-data; name=\"" + param + "\"");
+            // start form data, write content disposition
+            String contentDisposition = "Content-Disposition: form-data; name=\"" + param + '"';
             Object value = parameters.get(param);
             if (value instanceof FileValue) {
-                // Parameter is a file
+                // parameter value is a file, add extra file info to content disposition
                 FileValue fileValue = (FileValue) value;
-                // Include extra descriptors
-                writeBytes(out, "; filename=\"" + fileValue.name + "\"\n");
-                writeBytes(out, "Content-Type: " + fileValue.type + "\n\n");
-                // write data
+                contentDisposition += ";filename=\"" + fileValue.name + '"' + lineEnd;
+                out.writeBytes(contentDisposition);
+                out.writeBytes(lineEnd); // blank line between CD and data
                 out.write(fileValue.data);
-                G.dNoLn("<FILE_DATA>");
             } else {
-                // write data
-                writeBytes(out, "\n\n");
-                writeBytes(out, value.toString());
+                contentDisposition += lineEnd;
+                out.writeBytes(contentDisposition);
+                out.writeBytes(lineEnd); // blank line between CD and data
+                out.writeBytes(value.toString());
             }
-            writeBytes(out, boundary);
+            // end form data
+            out.writeBytes(lineEnd);
+            out.writeBytes(twoHyphens + boundary + lineEnd);
         }
 
-        return new ResourceResponse(conn);
-    }
+        // close output stream
+        out.flush();
+        out.close();
 
-    private void writeBytes(DataOutputStream out, String bytes) throws IOException {
-        out.writeBytes(bytes);
-        G.dNoLn(bytes);
+        return new ResourceResponse(conn);
     }
 
     /**

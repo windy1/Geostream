@@ -10,7 +10,7 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
 
     def create(self, request):
-        print(str(request.data))
+        print(str(request))
         serializer = PostSerializer(data=request.data)
         if (serializer.is_valid()):
             post = serializer.save()

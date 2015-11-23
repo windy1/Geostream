@@ -59,10 +59,6 @@ public final class G {
         Log.d(app.name, String.format(msg.toString(), params));
     }
 
-    public static void dNoLn(Object msg) {
-        System.out.print(msg);
-    }
-
     /**
      * Logs an error message;
      *
