@@ -9,8 +9,13 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.Window;
 
+import java.net.MalformedURLException;
+
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
+import se.walkercrou.geostream.net.Resource;
+import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
+import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.G;
 
 /**
@@ -66,6 +71,20 @@ public class PostDetailActivity extends Activity {
 
     private void discard() {
         G.d("client secret = " + clientSecret);
+        ResourceResponse response = null;
+        try {
+            response = new ResourceDeleteRequest(Resource.POSTS, post.getId(), clientSecret)
+                .sendInBackground();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        if (response == null) {
+            throw new RuntimeException("Could not discard post");
+        } else if (response.isError()) {
+            throw new RuntimeException("Could not discard post: " + response.getErrorDetail());
+        }
+
         startActivity(new Intent(this, MapActivity.class));
     }
 }

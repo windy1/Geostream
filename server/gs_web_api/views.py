@@ -22,8 +22,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, pk=None):
         post = self.get_object()
-        print(str(request.data))
-        if 'client_secret' not in request.data or request.data['client_secret'] != post.client_secret:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        else:
+        if 'HTTP_CLIENTSECRET' in request.META and str(request.META['HTTP_CLIENTSECRET']) == str(post.client_secret):
             return viewsets.ModelViewSet.destroy(self, request, pk)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
