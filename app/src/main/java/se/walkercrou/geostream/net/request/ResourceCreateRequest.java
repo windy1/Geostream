@@ -3,7 +3,6 @@ package se.walkercrou.geostream.net.request;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,7 +19,7 @@ public class ResourceCreateRequest extends ResourceListRequest {
     // Internal map of data to write
     private final Map<String, Object> parameters = new HashMap<>();
 
-    public ResourceCreateRequest(String resourceName) throws MalformedURLException {
+    public ResourceCreateRequest(String resourceName) {
         super(resourceName);
     }
 

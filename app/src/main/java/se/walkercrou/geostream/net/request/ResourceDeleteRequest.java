@@ -2,7 +2,6 @@ package se.walkercrou.geostream.net.request;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 
 import se.walkercrou.geostream.net.response.ResourceResponse;
 
@@ -15,8 +14,7 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
 public class ResourceDeleteRequest extends ResourceDetailRequest {
     private final String clientSecret;
 
-    public ResourceDeleteRequest(String resourceName, int resourceId, String clientSecret)
-        throws MalformedURLException {
+    public ResourceDeleteRequest(String resourceName, int resourceId, String clientSecret) {
         super(resourceName, resourceId);
         this.clientSecret = clientSecret;
     }

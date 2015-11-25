@@ -2,7 +2,6 @@ package se.walkercrou.geostream.net.request;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 
 import se.walkercrou.geostream.net.response.ResourceResponse;
 
@@ -10,9 +9,9 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
  * Represents a request to the server that gets a list of resources
  */
 public class ResourceListRequest extends Request<ResourceResponse> {
-    public ResourceListRequest(String resourceName) throws MalformedURLException {
+    public ResourceListRequest(String resourceName) {
         // "<serverUrl>/api/<resourceName>/" (e.g. "http://example.com/api/posts/")
-        super(Request.ROUTE_ROOT + resourceName + '/');
+        super(Request.RESOURCE_ROOT + resourceName + '/');
     }
 
     @Override

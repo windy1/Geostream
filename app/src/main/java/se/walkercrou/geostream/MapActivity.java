@@ -24,8 +24,8 @@ import java.util.Map;
 import se.walkercrou.geostream.camera.CameraActivity;
 import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.post.PostDetailActivity;
-import se.walkercrou.geostream.util.G;
 import se.walkercrou.geostream.util.Dialogs;
+import se.walkercrou.geostream.util.G;
 import se.walkercrou.geostream.util.LocationManager;
 
 /**

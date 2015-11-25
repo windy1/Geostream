@@ -37,7 +37,8 @@ public final class Dialogs {
      */
     public static AlertDialog sendPostError(Context c) {
         return errorBuilder(c, R.string.error_send_post)
-                .setPositiveButton(R.string.action_ok, (dialog, which) -> {})
+                .setPositiveButton(R.string.action_ok, (dialog, which) -> {
+                })
                 .create();
     }
 
@@ -57,7 +58,7 @@ public final class Dialogs {
     /**
      * Returns a dialog to display when an error occurs while trying to get the device's location.
      *
-     * @param c context
+     * @param c              context
      * @param tryAgainAction action if user presses try again
      * @return alert dialog
      */

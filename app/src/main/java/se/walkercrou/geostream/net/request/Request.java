@@ -15,7 +15,8 @@ import se.walkercrou.geostream.util.G;
  * @param <T> type of response expected
  */
 public abstract class Request<T extends Response> {
-    public static final String ROUTE_ROOT = "/api/";
+    public static final String RESOURCE_ROOT = "/api/";
+    public static final String MEDIA_ROOT = "/media/";
 
     protected URL url;
 
@@ -25,11 +26,28 @@ public abstract class Request<T extends Response> {
      *
      * @param route of request
      */
-    public Request(String route) throws MalformedURLException {
-        // ensure leading and trailing slashes
-        if (!route.startsWith("/")) route = '/' + route;
-        if (!route.endsWith("/")) route += '/';
-        url = new URL(G.app.serverUrl + route);
+    public Request(String route, boolean includeServerUrl) {
+        try {
+            if (includeServerUrl) {
+                // ensure leading and trailing slashes
+                if (!route.startsWith("/")) route = '/' + route;
+                if (!route.endsWith("/")) route += '/';
+                url = new URL(G.app.serverUrl + route);
+            } else
+                url = new URL(route);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Creates a new Request with the specified route. The route is appended to the server url to
+     * build the request url.
+     *
+     * @param route of request
+     */
+    public Request(String route) {
+        this(route, true);
     }
 
     /**

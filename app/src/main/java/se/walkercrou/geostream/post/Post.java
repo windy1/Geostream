@@ -10,7 +10,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -122,7 +121,7 @@ public class Post extends Resource implements Parcelable {
      * Creates and returns a new Post object and sends a creation request to the server.
      *
      * @param location of post
-     * @param data media data
+     * @param data     media data
      * @param callback error callback
      * @return new post object
      */
@@ -131,18 +130,12 @@ public class Post extends Resource implements Parcelable {
         Post post = new Post(location, data);
 
         // post to server
-        ResourceResponse response = null;
-        try {
-            ResourceCreateRequest request = new ResourceCreateRequest(Resource.POSTS);
-            request.set(PARAM_LAT, location.getLatitude())
+        ResourceCreateRequest request = new ResourceCreateRequest(Resource.POSTS);
+        request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, fileType, data))
                 .set(PARAM_IS_VIDEO, post.isVideo());
-            response = request.sendInBackground();
-        } catch (MalformedURLException e) {
-            // should never happen
-            e.printStackTrace();
-        }
+        ResourceResponse response = request.sendInBackground();
 
         G.d(response);
 
@@ -177,13 +170,7 @@ public class Post extends Resource implements Parcelable {
      */
     public static List<Post> all(ErrorCallback callback) {
         // send request to server
-        ResourceResponse response = null;
-        try {
-            response = new ResourceListRequest(Resource.POSTS).sendInBackground();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-
+        ResourceResponse response = new ResourceListRequest(Resource.POSTS).sendInBackground();
         G.d(response);
 
         // read response

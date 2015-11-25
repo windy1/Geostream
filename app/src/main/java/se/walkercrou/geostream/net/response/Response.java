@@ -21,8 +21,8 @@ public abstract class Response<T> {
     /**
      * Creates a new Response with the given HTTP InputStream and status code and message
      *
-     * @param in input stream
-     * @param statusCode code of response
+     * @param in            input stream
+     * @param statusCode    code of response
      * @param statusMessage message of response
      */
     public Response(InputStream in, int statusCode, String statusMessage) {

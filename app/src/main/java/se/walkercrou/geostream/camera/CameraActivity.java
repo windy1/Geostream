@@ -14,11 +14,11 @@ import com.melnykov.fab.FloatingActionButton;
 
 import java.util.Arrays;
 
-import se.walkercrou.geostream.util.LocationManager;
-import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.util.G;
+import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.util.Dialogs;
+import se.walkercrou.geostream.util.G;
+import se.walkercrou.geostream.util.LocationManager;
 
 /**
  * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to

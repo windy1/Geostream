@@ -17,4 +17,6 @@
         internet connection and try again.</string>
     <string name="description_splash">Splash screen</string>
     <string name="action_discard">Discard</string>
+    <string name="post">Post</string>
+    <string name="comments">Comments</string>
 </resources>
