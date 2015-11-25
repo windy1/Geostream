@@ -134,15 +134,12 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
 
     private void discard() {
         G.d("client secret = " + clientSecret);
-        ResourceResponse response = new ResourceDeleteRequest(Resource.POSTS, post.getId(),
-                clientSecret).sendInBackground();
-
-        if (response == null) {
+        ResourceResponse<Post> response = new ResourceDeleteRequest<>(Post.class, Resource.POSTS,
+                post.getId(), clientSecret).sendInBackground();
+        if (response == null)
             throw new RuntimeException("Could not discard post");
-        } else if (response.isError()) {
+        else if (response.isError())
             throw new RuntimeException("Could not discard post: " + response.getErrorDetail());
-        }
-
         startActivity(new Intent(this, MapActivity.class));
     }
 

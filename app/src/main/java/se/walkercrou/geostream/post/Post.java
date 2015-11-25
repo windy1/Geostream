@@ -6,11 +6,9 @@ import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import se.walkercrou.geostream.net.ErrorCallback;
@@ -130,12 +128,12 @@ public class Post extends Resource implements Parcelable {
         Post post = new Post(location, data);
 
         // post to server
-        ResourceCreateRequest request = new ResourceCreateRequest(Resource.POSTS);
+        ResourceCreateRequest<Post> request = new ResourceCreateRequest<>(Post.class, Resource.POSTS);
         request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, fileType, data))
                 .set(PARAM_IS_VIDEO, post.isVideo());
-        ResourceResponse response = request.sendInBackground();
+        ResourceResponse<Post> response = request.sendInBackground();
 
         G.d(response);
 
@@ -148,18 +146,7 @@ public class Post extends Resource implements Parcelable {
             return null;
         }
 
-        // read response
-        try {
-            JSONObject body = (JSONObject) response.get();
-            post.id = body.getInt(PARAM_ID); // set newly created id
-            String secret = body.getString(PARAM_CLIENT_SECRET); // get client secret
-            G.app.secrets.edit().putString(Integer.toString(post.id), secret).commit();
-            post.setFileUrl(body.getString(PARAM_FILE));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        return post;
+        return response.get();
     }
 
     /**
@@ -170,7 +157,8 @@ public class Post extends Resource implements Parcelable {
      */
     public static List<Post> all(ErrorCallback callback) {
         // send request to server
-        ResourceResponse response = new ResourceListRequest(Resource.POSTS).sendInBackground();
+        ResourceResponse<Post> response = new ResourceListRequest<>(Post.class, Resource.POSTS)
+                .sendInBackground();
         G.d(response);
 
         // read response
@@ -182,23 +170,24 @@ public class Post extends Resource implements Parcelable {
             return null;
         }
 
-        return parse((JSONArray) response.get());
+        return response.getList();
     }
 
-    private static List<Post> parse(JSONArray array) {
-        List<Post> posts = new ArrayList<>(array.length());
-        try {
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject jsonPost = array.getJSONObject(i);
-                Location loc = new Location(G.app.name);
-                loc.setLatitude(jsonPost.getDouble(PARAM_LAT));
-                loc.setLongitude(jsonPost.getDouble(PARAM_LNG));
-                posts.add(new Post(loc, jsonPost.getString(PARAM_FILE), jsonPost.getInt(PARAM_ID)));
-            }
-        } catch (JSONException e) {
-            G.e("An error occurred while parsing post data", e);
-        }
-        return posts;
+    public static Post parse(JSONObject obj) throws JSONException {
+        // build post from object
+        Location loc = new Location(G.app.name);
+        loc.setLatitude(obj.getDouble(PARAM_LAT));
+        loc.setLongitude(obj.getDouble(PARAM_LNG));
+        String fileUrl = obj.getString(PARAM_FILE);
+        int id = obj.getInt(PARAM_ID);
+        Post post = new Post(loc, fileUrl, id);
+
+        // see if there's a client secret included
+        String clientSecret = obj.optString(PARAM_CLIENT_SECRET, null);
+        if (clientSecret != null)
+            G.app.secrets.edit().putString(Integer.toString(id), clientSecret).commit();
+
+        return post;
     }
 
     // Parcelable implementation for passing posts between activities

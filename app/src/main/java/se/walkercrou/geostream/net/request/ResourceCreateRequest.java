@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
 
+import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.response.ResourceResponse;
 
 /**
@@ -15,12 +16,12 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
  * data. This class extends {@link ResourceListRequest} because it follows the same URL pattern (no
  * resource ID required).
  */
-public class ResourceCreateRequest extends ResourceListRequest {
+public class ResourceCreateRequest <T extends Resource> extends ResourceListRequest<T> {
     // Internal map of data to write
     private final Map<String, Object> parameters = new HashMap<>();
 
-    public ResourceCreateRequest(String resourceName) {
-        super(resourceName);
+    public ResourceCreateRequest(Class<T> resourceClass, String resourceName) {
+        super(resourceClass, resourceName);
     }
 
     /**
@@ -36,7 +37,7 @@ public class ResourceCreateRequest extends ResourceListRequest {
     }
 
     @Override
-    public ResourceResponse send() throws IOException {
+    public ResourceResponse<T> send() throws IOException {
         // obtain server connection
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setUseCaches(false);
@@ -83,7 +84,7 @@ public class ResourceCreateRequest extends ResourceListRequest {
         out.flush();
         out.close();
 
-        return new ResourceResponse(conn);
+        return new ResourceResponse(resourceClass, conn);
     }
 
     /**

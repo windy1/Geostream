@@ -58,7 +58,6 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
 
     @Override
     public void onConnected(Bundle bundle) {
-        G.d("Connected to location services API");
         if (callback != null)
             callback.run();
     }
