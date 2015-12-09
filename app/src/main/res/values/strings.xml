@@ -19,4 +19,8 @@
     <string name="action_discard">Discard</string>
     <string name="post">Post</string>
     <string name="comments">Comments</string>
+    <string name="hint_comment">Enter comment</string>
+    <string name="refresh">Refresh</string>
+    <string name="send">Send</string>
+    <string name="error_empty_reply">Please enter a reply first.</string>
 </resources>

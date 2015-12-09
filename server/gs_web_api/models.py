@@ -12,3 +12,13 @@ class Post(models.Model):
 
     class Meta:
         ordering = ('created',)
+
+
+class Comment(models.Model):
+    post = models.ForeignKey(Post, related_name='comments')
+    created = models.DateTimeField(auto_now_add=True)
+    content = models.CharField(max_length=200)
+
+    class Meta:
+        unique_together = ('post', 'created')
+        ordering = ('created',)

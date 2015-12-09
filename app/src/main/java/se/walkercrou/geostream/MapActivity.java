@@ -12,6 +12,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -33,7 +34,7 @@ import se.walkercrou.geostream.util.LocationManager;
  * posts.
  */
 public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerClickListener,
-        GoogleMap.OnMyLocationChangeListener {
+        GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraChangeListener {
 
     public static final int MAP_ZOOM = 17;
 
@@ -74,14 +75,23 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        // marker on map clicked, open the post
         openPost(marker);
         return true;
     }
 
     @Override
     public void onMyLocationChange(Location location) {
+        // keep map locked on position
         if (location != null)
             centerMapOnLocation(location);
+    }
+
+    @Override
+    public void onCameraChange(CameraPosition cameraPosition) {
+        // enforce the minimum zoom
+        if (cameraPosition.zoom < MAP_ZOOM && map.getMyLocation() != null)
+            centerMapOnLocation(map.getMyLocation());
     }
 
     public void openCamera(View view) {
@@ -106,7 +116,9 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
                 UiSettings ui = map.getUiSettings();
                 // lock map to position and do not allow zoom
                 ui.setAllGesturesEnabled(false);
+                ui.setZoomGesturesEnabled(true);
                 ui.setMapToolbarEnabled(false);
+                map.setOnCameraChangeListener(this);
                 // redirect all marker clicks to this
                 map.setOnMarkerClickListener(this);
 

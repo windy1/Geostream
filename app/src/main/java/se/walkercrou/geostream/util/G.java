@@ -60,13 +60,22 @@ public final class G {
     }
 
     /**
-     * Logs an error message;
+     * Logs an error message.
      *
      * @param msg to log
      * @param t   source of error
      */
     public static void e(String msg, Throwable t) {
         Log.e(app.name, msg, t);
+    }
+
+    /**
+     * Logs an error message.
+     *
+     * @param msg to log
+     */
+    public static void e(String msg) {
+        Log.e(app.name, msg);
     }
 
     /**

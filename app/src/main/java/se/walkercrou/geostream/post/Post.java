@@ -6,15 +6,19 @@ import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest.FileValue;
+import se.walkercrou.geostream.net.request.ResourceDetailRequest;
 import se.walkercrou.geostream.net.request.ResourceListRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.G;
@@ -30,6 +34,7 @@ public class Post extends Resource implements Parcelable {
     public static final String PARAM_FILE = "media_file";
     public static final String PARAM_IS_VIDEO = "is_video";
     public static final String PARAM_CLIENT_SECRET = "client_secret";
+    public static final String PARAM_COMMENTS = "comments";
 
     public static final String BASE_FILE_NAME = "media_file.bmp";
 
@@ -37,6 +42,7 @@ public class Post extends Resource implements Parcelable {
     private final Location location;
     private byte[] data;
     private String fileUrl;
+    protected final List<Comment> comments = new ArrayList<>();
 
     private Post(Location location, byte[] data) {
         this.location = location;
@@ -105,6 +111,15 @@ public class Post extends Resource implements Parcelable {
     }
 
     /**
+     * Returns the Comments in this Post.
+     *
+     * @return post comments
+     */
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    /**
      * Starts this Post's detail activity from the specified context.
      *
      * @param c context to start from
@@ -116,6 +131,51 @@ public class Post extends Resource implements Parcelable {
     }
 
     /**
+     * Creates a new comment on this post.
+     *
+     * @param content to comment
+     * @param callback in case of error
+     * @return comment
+     */
+    public Comment comment(String content, ErrorCallback callback) {
+        return Comment.create(this, content, callback);
+    }
+
+    /**
+     * Retrieves new comments from the server
+     *
+     * @param callback in case of error
+     * @return new comments
+     */
+    public List<Comment> refreshComments(ErrorCallback callback) {
+        // send request to server
+        ResourceDetailRequest<Post> request
+                = new ResourceDetailRequest<>(Post.class, Resource.POSTS, id);
+        ResourceResponse<Post> response = request.sendInBackground();
+
+        // check for error
+        if (response == null) {
+            callback.onError(null);
+            return null;
+        } else if (response.isError()) {
+            callback.onError(response.getErrorDetail());
+            return null;
+        }
+
+        List<Comment> comments = response.get().comments;
+        int oldSize = this.comments.size();
+        int newSize = comments.size();
+        // if there are more comments than previously known, add new comments to end of list
+        if (newSize > oldSize) {
+            List<Comment> newComments = comments.subList(oldSize, newSize);
+            this.comments.addAll(newComments);
+            return newComments;
+        }
+
+        return new ArrayList<>();
+    }
+
+    /**
      * Creates and returns a new Post object and sends a creation request to the server.
      *
      * @param location of post
@@ -124,15 +184,12 @@ public class Post extends Resource implements Parcelable {
      * @return new post object
      */
     public static Post create(Location location, String fileType, byte[] data, ErrorCallback callback) {
-        // create post object
-        Post post = new Post(location, data);
-
         // post to server
         ResourceCreateRequest<Post> request = new ResourceCreateRequest<>(Post.class, Resource.POSTS);
         request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, fileType, data))
-                .set(PARAM_IS_VIDEO, post.isVideo());
+                .set(PARAM_IS_VIDEO, false);
         ResourceResponse<Post> response = request.sendInBackground();
 
         G.d(response);
@@ -173,7 +230,14 @@ public class Post extends Resource implements Parcelable {
         return response.getList();
     }
 
-    public static Post parse(JSONObject obj) throws JSONException {
+    /**
+     * Creates a new Post from the specified {@link JSONObject}.
+     *
+     * @param obj to parse
+     * @return new Post
+     * @throws JSONException if error with JSONObject
+     */
+    public static Post parse(JSONObject obj) throws JSONException, ParseException {
         // build post from object
         Location loc = new Location(G.app.name);
         loc.setLatitude(obj.getDouble(PARAM_LAT));
@@ -181,6 +245,11 @@ public class Post extends Resource implements Parcelable {
         String fileUrl = obj.getString(PARAM_FILE);
         int id = obj.getInt(PARAM_ID);
         Post post = new Post(loc, fileUrl, id);
+
+        // parse comments
+        JSONArray comments = obj.getJSONArray(PARAM_COMMENTS);
+        for (int i = 0; i < comments.length(); i++)
+            post.comments.add(Comment.parse(comments.getJSONObject(i)));
 
         // see if there's a client secret included
         String clientSecret = obj.optString(PARAM_CLIENT_SECRET, null);
@@ -198,7 +267,11 @@ public class Post extends Resource implements Parcelable {
             Location location = source.readParcelable(null);
             String fileUrl = source.readString();
             int id = source.readInt();
-            return new Post(location, fileUrl, id);
+            Parcelable[] comments = source.readParcelableArray(getClass().getClassLoader());
+            Post post = new Post(location, fileUrl, id);
+            for (Parcelable comment : comments)
+                post.comments.add((Comment) comment);
+            return post;
         }
 
         @Override
@@ -217,5 +290,7 @@ public class Post extends Resource implements Parcelable {
         dest.writeParcelable(location, flags);
         dest.writeString(fileUrl);
         dest.writeInt(id);
+        Parcelable[] comments = this.comments.toArray(new Parcelable[this.comments.size()]);
+        dest.writeParcelableArray(comments, flags);
     }
 }

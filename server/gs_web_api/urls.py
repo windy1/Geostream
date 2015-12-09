@@ -6,6 +6,7 @@ from . import views
 # add views to the router
 router = routers.DefaultRouter()
 router.register(r'posts', views.PostViewSet)
+router.register(r'comments', views.CommentViewSet)
 
 urlpatterns = [
     # include URLs created by the router

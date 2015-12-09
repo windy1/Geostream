@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Post
-from .serializers import PostSerializer
+from .models import Post, Comment
+from .serializers import PostSerializer, CommentSerializer
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -26,3 +26,8 @@ class PostViewSet(viewsets.ModelViewSet):
             return viewsets.ModelViewSet.destroy(self, request, pk)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer

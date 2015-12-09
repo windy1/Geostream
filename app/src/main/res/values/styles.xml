@@ -1,5 +1,8 @@
 <resources>
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/primary_dark</item>
+        <item name="android:colorAccent">@color/accent</item>
         <item name="android:actionBarStyle">@style/AppActionBar</item>
         <item name="actionBarStyle">@style/AppActionBar</item>
         <item name="android:buttonStyle">?android:attr/borderlessButtonStyle</item>
