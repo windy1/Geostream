@@ -36,10 +36,10 @@ import se.walkercrou.geostream.util.LocationManager;
 public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerClickListener,
         GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraChangeListener {
 
-    public static final int MAP_ZOOM = 17;
+    public static final int MIN_MAP_ZOOM = 17;
 
     private GoogleMap map;
-    private FloatingActionButton cameraBtn;
+    private FloatingActionButton cameraBtn, refreshBtn;
     // used for getting initial location, after that the map is used
     private LocationManager locationManager;
     private View splashScreen;
@@ -56,6 +56,13 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         // initialize singleton utility class
         G.init(this);
 
+        // setup up camera button
+        cameraBtn = (FloatingActionButton) findViewById(R.id.fab_camera);
+        cameraBtn.hide(false);
+
+        refreshBtn = (FloatingActionButton) findViewById(R.id.fab_refresh);
+        refreshBtn.hide(false);
+
         // show splash screen if not yet shown
         // TODO: Show loading spinner while map is loading if splash screen is not displayed
         splashScreen = findViewById(R.id.splash);
@@ -63,10 +70,6 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             splashScreen.setVisibility(View.VISIBLE);
             G.app.splashed = true;
         }
-
-        // setup up camera button
-        cameraBtn = (FloatingActionButton) findViewById(R.id.fab_camera);
-        cameraBtn.hide(false);
 
         // get initial location
         locationManager = new LocationManager(this);
@@ -76,6 +79,11 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     @Override
     public boolean onMarkerClick(Marker marker) {
         // marker on map clicked, open the post
+        refresh();
+        if (!posts.containsKey(marker)) {
+            Toast.makeText(this, R.string.error_post_no_longer_exists, Toast.LENGTH_SHORT).show();
+            return true;
+        }
         openPost(marker);
         return true;
     }
@@ -83,15 +91,54 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     @Override
     public void onMyLocationChange(Location location) {
         // keep map locked on position
-        if (location != null)
+        if (location != null && map.getCameraPosition().zoom == MIN_MAP_ZOOM)
             centerMapOnLocation(location);
     }
 
     @Override
     public void onCameraChange(CameraPosition cameraPosition) {
         // enforce the minimum zoom
-        if (cameraPosition.zoom < MAP_ZOOM && map.getMyLocation() != null)
+        if (cameraPosition.zoom < MIN_MAP_ZOOM && map.getMyLocation() != null)
             centerMapOnLocation(map.getMyLocation());
+    }
+
+    public void refresh(View view) {
+        refresh();
+    }
+
+    public void refresh() {
+        G.d("refreshing");
+        List<Post> newPosts = getPosts();
+
+        // remove posts that are no longer present
+        for (Marker marker : posts.keySet()) {
+            Post oldPost = posts.get(marker);
+            boolean found = false;
+            for (Post newPost : newPosts) {
+                if (oldPost.getId() == newPost.getId())
+                    found = true;
+            }
+
+            if (!found) {
+                G.d("removing marker");
+                marker.remove();
+                posts.remove(marker);
+            }
+        }
+
+        // add new posts
+        for (Post newPost : newPosts) {
+            G.d("newPost = " + newPost.getId());
+            boolean found = false;
+            for (Post oldPost : posts.values()) {
+                if (oldPost.getId() == newPost.getId())
+                    found = true;
+            }
+            if (!found) {
+                G.d("adding marker");
+                placePost(newPost);
+            }
+        }
     }
 
     public void openCamera(View view) {
@@ -104,6 +151,8 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         // called when the devices location is established for the first time
         setupMap();
         splashScreen.setVisibility(View.GONE);
+        findViewById(R.id.fabs).setVisibility(View.VISIBLE);
+        refreshBtn.show();
         cameraBtn.show();
     }
 
@@ -142,7 +191,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     private void centerMapOnLocation(Location location) {
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                new LatLng(location.getLatitude(), location.getLongitude()), MAP_ZOOM
+                new LatLng(location.getLatitude(), location.getLongitude()), MIN_MAP_ZOOM
         ));
     }
 

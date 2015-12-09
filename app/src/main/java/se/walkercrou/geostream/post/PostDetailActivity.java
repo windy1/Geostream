@@ -1,8 +1,10 @@
 package se.walkercrou.geostream.post;
 
 import android.app.ActionBar;
+import android.app.AlertDialog;
 import android.app.FragmentTransaction;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -14,7 +16,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.internal.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,7 +32,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
@@ -81,8 +85,10 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
         // show "discard" button if we have the client secret for this post
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.post_detail_activity_actions, menu);
-        if (clientSecret != null)
+        if (clientSecret != null) {
+            G.d(clientSecret);
             menu.getItem(0).setVisible(true);
+        }
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -116,10 +122,20 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
     public void onPageScrollStateChanged(int state) {
     }
 
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_discard:
-                discard();
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.confirm_title)
+                        .setMessage(R.string.confirm_delete_message)
+                        .setPositiveButton(R.string.action_delete, (dialog, which) -> {
+                            dialog.dismiss();
+                            discard();
+                        })
+                        .setNegativeButton(R.string.action_cancel,
+                                (dialog, which) -> dialog.dismiss())
+                        .show();
                 return true;
             default:
                 return false;
@@ -218,22 +234,51 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
     }
 
     /**
+     * Custom {@link ArrayAdapter} to handle Comment inflation within the ListView
+     */
+    public static class CommentAdapter extends ArrayAdapter<Comment> {
+        public CommentAdapter(Context context, List<Comment> comments) {
+            super(context, R.layout.comment, R.id.content, comments);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View v = super.getView(position, convertView, parent);
+            Date date = getItem(position).getCreationDate();
+            ((TextView) v.findViewById(R.id.created)).setText(getTimeDisplay(date));
+            return v;
+        }
+
+        public String getTimeDisplay(Date date) {
+            Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
+            long diff = now.getTime() - date.getTime();
+            long seconds = diff / 1000;
+            if (seconds < 60)
+                return "<1m";
+            long minutes = seconds / 60;
+            if (minutes < 60)
+                return minutes + "m";
+            long hours = minutes / 60;
+            if (hours < 24)
+                return hours + "h";
+            return (hours / 24) + "d";
+        }
+    }
+
+    /**
      * Represents the tab with the comments section
      */
     public static class CommentsFragment extends Fragment implements View.OnClickListener,
             SwipeRefreshLayout.OnRefreshListener {
         public static final String ARG_POST = "post";
         private View view;
-        private ArrayAdapter<String> adapter;
+        private CommentAdapter adapter;
         private Post post;
         private SwipeRefreshLayout swipeLayout;
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
             // inflate view
-            Context c = new ContextThemeWrapper(getActivity(),
-                    R.style.Base_Theme_AppCompat_Light_DarkActionBar);
-            inflater = inflater.cloneInContext(c);
             View view = inflater.inflate(R.layout.fragment_comments, container, false);
             view.findViewById(R.id.btn_send).setOnClickListener(this);
 
@@ -243,10 +288,8 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
                 throw new RuntimeException();
 
             // add comments to list view
-            List<String> contents = new ArrayList<>();
-            for (Comment comment : post.getComments())
-                contents.add(comment.getContent());
-            adapter = new ArrayAdapter<>(getContext(), R.layout.comment, R.id.content, contents);
+            List<Comment> comments = post.getComments();
+            adapter = new CommentAdapter(getContext(), new ArrayList<>(post.getComments()));
             ListView listView = (ListView) view.findViewById(R.id.list_comments);
             listView.setAdapter(adapter);
 
@@ -265,6 +308,7 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
             String content = field.getText().toString().trim();
             Bundle args = getArguments();
 
+            // make sure comment has content
             if (content.isEmpty()) {
                 Toast.makeText(getContext(), getString(R.string.error_empty_reply),
                         Toast.LENGTH_SHORT).show();
@@ -275,7 +319,7 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
             Comment comment = post.comment(content, G::e);
             if (comment != null) {
                 G.d(comment.getContent());
-                adapter.add(comment.getContent());
+                adapter.add(comment);
             }
 
             // remove focus from reply box
@@ -295,9 +339,9 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
         public void onRefresh() {
             // retrieve new comments from the server and update the adapter
             new Handler().post(() -> {
-                List<Comment> newComments = post.refreshComments(G::e);
-                for (Comment comment : newComments)
-                    adapter.add(comment.getContent());
+                post.refreshComments(G::e);
+                adapter.clear();
+                adapter.addAll(post.getComments());
                 swipeLayout.setRefreshing(false);
             });
         }

@@ -42,7 +42,7 @@ public class Post extends Resource implements Parcelable {
     private final Location location;
     private byte[] data;
     private String fileUrl;
-    protected final List<Comment> comments = new ArrayList<>();
+    protected List<Comment> comments = new ArrayList<>();
 
     private Post(Location location, byte[] data) {
         this.location = location;
@@ -145,9 +145,8 @@ public class Post extends Resource implements Parcelable {
      * Retrieves new comments from the server
      *
      * @param callback in case of error
-     * @return new comments
      */
-    public List<Comment> refreshComments(ErrorCallback callback) {
+    public void refreshComments(ErrorCallback callback) {
         // send request to server
         ResourceDetailRequest<Post> request
                 = new ResourceDetailRequest<>(Post.class, Resource.POSTS, id);
@@ -156,23 +155,13 @@ public class Post extends Resource implements Parcelable {
         // check for error
         if (response == null) {
             callback.onError(null);
-            return null;
+            return;
         } else if (response.isError()) {
             callback.onError(response.getErrorDetail());
-            return null;
+            return;
         }
 
-        List<Comment> comments = response.get().comments;
-        int oldSize = this.comments.size();
-        int newSize = comments.size();
-        // if there are more comments than previously known, add new comments to end of list
-        if (newSize > oldSize) {
-            List<Comment> newComments = comments.subList(oldSize, newSize);
-            this.comments.addAll(newComments);
-            return newComments;
-        }
-
-        return new ArrayList<>();
+        this.comments = response.get().comments;
     }
 
     /**

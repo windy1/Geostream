@@ -36,19 +36,38 @@
         tools:context=".MapsActivity"
         android:name="com.google.android.gms.maps.SupportMapFragment" />
 
-    <!-- Open camera activity -->
-    <com.melnykov.fab.FloatingActionButton
-        android:id="@+id/fab_camera"
-        android:onClick="openCamera"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <LinearLayout
+        android:id="@+id/fabs"
+        android:visibility="invisible"
+        android:orientation="vertical"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_action_camera"
-        fab:fab_colorNormal="@color/primary"
-        fab:fab_colorPressed="@color/primary_dark"
-        fab:fab_colorRipple="@color/primary_darker" />
+        android:layout_alignParentRight="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
 
+        <com.melnykov.fab.FloatingActionButton
+            android:id="@+id/fab_refresh"
+            android:onClick="refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:src="@drawable/ic_action_refresh"
+            fab:fab_colorNormal="@color/secondary"
+            fab:fab_colorPressed="@color/secondary"
+            fab:fab_colorRipple="@color/secondary"/>
+
+        <!-- Open camera activity -->
+        <com.melnykov.fab.FloatingActionButton
+            android:id="@+id/fab_camera"
+            android:onClick="openCamera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:src="@drawable/ic_action_camera"
+            fab:fab_colorNormal="@color/primary"
+            fab:fab_colorPressed="@color/primary_dark"
+            fab:fab_colorRipple="@color/primary_darker" />
+
+    </LinearLayout>
 </RelativeLayout>

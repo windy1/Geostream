@@ -11,6 +11,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
@@ -21,13 +22,18 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
  * Represents a comment within a Post
  */
 public class Comment extends Resource implements Parcelable {
-    private static final DateFormat DATE_FORMAT
-            = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     private final String content;
     private final Date created;
 
+    public static final DateFormat DATE_FORMAT
+            = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+
     public static final String PARAM_POST = "post";
     public static final String PARAM_CONTENT = "content";
+
+    static {
+        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
 
     private Comment(String content, Date created) {
         this.content = content;
