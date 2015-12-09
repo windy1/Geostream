@@ -6,17 +6,14 @@ import android.os.Parcelable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
 
 import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
+import se.walkercrou.geostream.util.G;
 
 /**
  * Represents a comment within a Post
@@ -25,15 +22,9 @@ public class Comment extends Resource implements Parcelable {
     private final String content;
     private final Date created;
 
-    public static final DateFormat DATE_FORMAT
-            = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-
     public static final String PARAM_POST = "post";
     public static final String PARAM_CONTENT = "content";
-
-    static {
-        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
+    public static final String PARAM_CREATED = "created";
 
     private Comment(String content, Date created) {
         this.content = content;
@@ -66,10 +57,8 @@ public class Comment extends Resource implements Parcelable {
      * @throws JSONException if error with json
      */
     public static Comment parse(JSONObject obj) throws JSONException, ParseException {
-        String[] dateTime = obj.getString("created").split("T");
-        String date = dateTime[0];
-        String time = dateTime[1].substring(0, dateTime[1].indexOf('.'));
-        return new Comment(obj.getString("content"), DATE_FORMAT.parse(date + ' ' + time));
+        return new Comment(obj.getString(PARAM_CONTENT),
+                G.parseDateString(obj.getString(PARAM_CREATED)));
     }
 
     /**
@@ -113,7 +102,7 @@ public class Comment extends Resource implements Parcelable {
         @Override
         public Comment createFromParcel(Parcel source) {
             try {
-                return new Comment(source.readString(), DATE_FORMAT.parse(source.readString()));
+                return new Comment(source.readString(), G.DATE_FORMAT.parse(source.readString()));
             } catch (ParseException e) {
                 throw new RuntimeException(e);
             }
@@ -133,6 +122,6 @@ public class Comment extends Resource implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(content);
-        dest.writeString(DATE_FORMAT.format(created));
+        dest.writeString(G.DATE_FORMAT.format(created));
     }
 }

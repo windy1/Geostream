@@ -4,7 +4,6 @@ import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
@@ -198,6 +197,7 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
                     MediaFragment frag = new MediaFragment();
                     Bundle args = new Bundle();
                     args.putParcelable(MediaFragment.ARG_MEDIA, media);
+                    args.putParcelable(MediaFragment.ARG_POST, post);
                     frag.setArguments(args);
                     return frag;
                 case 1:
@@ -222,13 +222,23 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
      */
     public static class MediaFragment extends Fragment {
         public static final String ARG_MEDIA = "media";
+        public static final String ARG_POST = "post";
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
             View view = inflater.inflate(R.layout.fragment_media, container, false);
             Bundle args = getArguments();
+
+            // set the image
             ((ImageView) view.findViewById(R.id.media))
                     .setImageBitmap(args.getParcelable(ARG_MEDIA));
+
+            // set the time
+            Post post = args.getParcelable(ARG_POST);
+            if (post != null)
+                ((TextView) view.findViewById(R.id.created))
+                        .setText(getTimeDisplay(post.getCreationDate()));
+
             return view;
         }
     }
@@ -248,21 +258,21 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
             ((TextView) v.findViewById(R.id.created)).setText(getTimeDisplay(date));
             return v;
         }
+    }
 
-        public String getTimeDisplay(Date date) {
-            Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
-            long diff = now.getTime() - date.getTime();
-            long seconds = diff / 1000;
-            if (seconds < 60)
-                return "<1m";
-            long minutes = seconds / 60;
-            if (minutes < 60)
-                return minutes + "m";
-            long hours = minutes / 60;
-            if (hours < 24)
-                return hours + "h";
-            return (hours / 24) + "d";
-        }
+    private static String getTimeDisplay(Date date) {
+        Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
+        long diff = now.getTime() - date.getTime();
+        long seconds = diff / 1000;
+        if (seconds < 60)
+            return "<1m";
+        long minutes = seconds / 60;
+        if (minutes < 60)
+            return minutes + "m";
+        long hours = minutes / 60;
+        if (hours < 24)
+            return hours + "h";
+        return (hours / 24) + "d";
     }
 
     /**

@@ -103,6 +103,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     }
 
     public void refresh(View view) {
+        centerMapOnLocation(map.getMyLocation());
         refresh();
     }
 

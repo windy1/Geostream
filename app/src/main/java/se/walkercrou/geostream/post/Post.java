@@ -12,6 +12,7 @@ import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import se.walkercrou.geostream.net.ErrorCallback;
@@ -35,6 +36,7 @@ public class Post extends Resource implements Parcelable {
     public static final String PARAM_IS_VIDEO = "is_video";
     public static final String PARAM_CLIENT_SECRET = "client_secret";
     public static final String PARAM_COMMENTS = "comments";
+    public static final String PARAM_CREATED = "created";
 
     public static final String BASE_FILE_NAME = "media_file.bmp";
 
@@ -42,6 +44,7 @@ public class Post extends Resource implements Parcelable {
     private final Location location;
     private byte[] data;
     private String fileUrl;
+    private Date created;
     protected List<Comment> comments = new ArrayList<>();
 
     private Post(Location location, byte[] data) {
@@ -49,10 +52,11 @@ public class Post extends Resource implements Parcelable {
         this.data = data;
     }
 
-    private Post(Location location, String fileUrl, int id) {
+    private Post(Location location, String fileUrl, int id, Date created) {
         this.location = location;
         this.fileUrl = fileUrl;
         this.id = id;
+        this.created = created;
     }
 
     /**
@@ -108,6 +112,10 @@ public class Post extends Resource implements Parcelable {
      */
     public void setFileUrl(String fileUrl) {
         this.fileUrl = fileUrl;
+    }
+
+    public Date getCreationDate() {
+        return created;
     }
 
     /**
@@ -233,7 +241,8 @@ public class Post extends Resource implements Parcelable {
         loc.setLongitude(obj.getDouble(PARAM_LNG));
         String fileUrl = obj.getString(PARAM_FILE);
         int id = obj.getInt(PARAM_ID);
-        Post post = new Post(loc, fileUrl, id);
+        Date created = G.parseDateString(obj.getString(PARAM_CREATED));
+        Post post = new Post(loc, fileUrl, id, created);
 
         // parse comments
         JSONArray comments = obj.getJSONArray(PARAM_COMMENTS);
@@ -253,13 +262,22 @@ public class Post extends Resource implements Parcelable {
     public static final Parcelable.Creator<Post> CREATOR = new Creator<Post>() {
         @Override
         public Post createFromParcel(Parcel source) {
-            Location location = source.readParcelable(null);
             String fileUrl = source.readString();
+            Date date;
+            try {
+                date = G.DATE_FORMAT.parse(source.readString());
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+
             int id = source.readInt();
-            Parcelable[] comments = source.readParcelableArray(getClass().getClassLoader());
-            Post post = new Post(location, fileUrl, id);
-            for (Parcelable comment : comments)
-                post.comments.add((Comment) comment);
+            Location location = source.readParcelable(null);
+            Parcelable[] array = source.readParcelableArray(getClass().getClassLoader());
+
+            Post post = new Post(location, fileUrl, id, date);
+            for (Parcelable p : array)
+                post.comments.add((Comment) p);
+
             return post;
         }
 
@@ -276,9 +294,12 @@ public class Post extends Resource implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeParcelable(location, flags);
         dest.writeString(fileUrl);
+        dest.writeString(G.DATE_FORMAT.format(created));
+
         dest.writeInt(id);
+
+        dest.writeParcelable(location, flags);
         Parcelable[] comments = this.comments.toArray(new Parcelable[this.comments.size()]);
         dest.writeParcelableArray(comments, flags);
     }
