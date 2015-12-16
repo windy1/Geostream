@@ -10,7 +10,7 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
 
     def create(self, request):
-        print(str(request))
+        # hijack create method to include the client secret on initial creation
         serializer = PostSerializer(data=request.data)
         if (serializer.is_valid()):
             post = serializer.save()
@@ -21,6 +21,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
+        # hijack destroy method to make sure that the request include the client secret
         post = self.get_object()
         if 'HTTP_CLIENTSECRET' in request.META and str(request.META['HTTP_CLIENTSECRET']) == str(post.client_secret):
             return viewsets.ModelViewSet.destroy(self, request, pk)

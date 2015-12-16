@@ -25,7 +25,7 @@ import java.util.Map;
 import se.walkercrou.geostream.camera.CameraActivity;
 import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.post.PostDetailActivity;
-import se.walkercrou.geostream.util.Dialogs;
+import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 import se.walkercrou.geostream.util.LocationManager;
 
@@ -102,11 +102,9 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             centerMapOnLocation(map.getMyLocation());
     }
 
-    public void refresh(View view) {
-        centerMapOnLocation(map.getMyLocation());
-        refresh();
-    }
-
+    /**
+     * Refreshes the posts on the map to reflect any new posts or deleted posts on the server.
+     */
     public void refresh() {
         G.d("refreshing");
         List<Post> newPosts = getPosts();
@@ -142,6 +140,14 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         }
     }
 
+    // -- Methods called from XML --
+
+    public void refresh(View view) {
+        // refreshes the posts on the map from the server
+        centerMapOnLocation(map.getMyLocation());
+        refresh();
+    }
+
     public void openCamera(View view) {
         // called when the camera FAB is clicked, see respective layout file
         startActivity(new Intent(this, CameraActivity.class));
@@ -157,7 +163,10 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         cameraBtn.show();
     }
 
+    // -----------------------------
+
     private void setupMap() {
+        // initialize map
         if (map == null) {
             map = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
                     .getMap();
@@ -216,7 +225,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         return Post.all((error) -> {
             if (error == null)
                 // no connection
-                Dialogs.connectionError(this, (dialog, which) -> {
+                E.connection(this, (dialog, which) -> {
                     // dismiss dialog and try again
                     dialog.dismiss();
                     getPosts();

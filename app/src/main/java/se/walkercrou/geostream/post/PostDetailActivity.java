@@ -45,13 +45,20 @@ import se.walkercrou.geostream.net.response.MediaResponse;
 import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.G;
 
+import static android.app.ActionBar.*;
+import static android.support.v4.view.ViewPager.*;
+
 /**
  * Represents an activity that displays a post's details.
  */
 @SuppressWarnings("deprecation")
-public class PostDetailActivity extends FragmentActivity implements ActionBar.TabListener,
-        ViewPager.OnPageChangeListener {
+public class PostDetailActivity extends FragmentActivity implements TabListener,
+        OnPageChangeListener {
+    /**
+     * Extra that contains the Post that is expected in this activity.
+     */
     public static final String EXTRA_POST = "post";
+
     private Post post;
     private String clientSecret;
     private ViewPager viewPager;
@@ -65,6 +72,10 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
 
         // get the passed post object
         post = getIntent().getParcelableExtra(EXTRA_POST);
+        if (post == null)
+            throw new RuntimeException("PostDetailActivity started with null Post");
+
+        // see if we have the client secret for this post, okay if not
         clientSecret = G.app.secrets.getString(Integer.toString(post.getId()), null);
 
         // get bitmap from server
@@ -92,17 +103,17 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
     }
 
     @Override
-    public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
+    public void onTabSelected(Tab tab, FragmentTransaction ft) {
         // update view pager when tab is selected
         viewPager.setCurrentItem(tab.getPosition());
     }
 
     @Override
-    public void onTabUnselected(ActionBar.Tab tab, FragmentTransaction ft) {
+    public void onTabUnselected(Tab tab, FragmentTransaction ft) {
     }
 
     @Override
-    public void onTabReselected(ActionBar.Tab tab, FragmentTransaction ft) {
+    public void onTabReselected(Tab tab, FragmentTransaction ft) {
     }
 
     @Override
@@ -132,8 +143,7 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
                             dialog.dismiss();
                             discard();
                         })
-                        .setNegativeButton(R.string.action_cancel,
-                                (dialog, which) -> dialog.dismiss())
+                        .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
                         .show();
                 return true;
             default:
@@ -141,19 +151,10 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
         }
     }
 
-    private void setupActionBar() {
-        ActionBar bar = getActionBar();
-        if (bar == null)
-            return;
-
-        // enable up navigation
-        bar.setDisplayHomeAsUpEnabled(true);
-        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-        bar.addTab(bar.newTab().setText(R.string.post).setTabListener(this));
-        bar.addTab(bar.newTab().setText(R.string.comments).setTabListener(this));
-    }
-
-    private void discard() {
+    /**
+     * Attempts to delete this Post on the server and client.
+     */
+    public void discard() {
         G.d("client secret = " + clientSecret);
         ResourceResponse<Post> response = new ResourceDeleteRequest<>(Post.class, Resource.POSTS,
                 post.getId(), clientSecret).sendInBackground();
@@ -164,8 +165,50 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
         startActivity(new Intent(this, MapActivity.class));
     }
 
+    /**
+     * Returns the string to display for timestamps on Posts or Comments. Compared to the current
+     * date.
+     *
+     * @param date to get difference of
+     * @return display string
+     */
+    public static String getTimeDisplay(Date date) {
+        Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
+        long diff = now.getTime() - date.getTime();
+
+        // display "<1m" if in the seconds
+        long seconds = diff / 1000;
+        if (seconds < 60)
+            return "<1m";
+
+        // display minutes if >1m but <1h
+        long minutes = seconds / 60;
+        if (minutes < 60)
+            return minutes + "m";
+
+        // display hours if >1h but <1d
+        long hours = minutes / 60;
+        if (hours < 24)
+            return hours + "h";
+
+        // otherwise display days
+        return (hours / 24) + "d";
+    }
+
+    private void setupActionBar() {
+        ActionBar bar = getActionBar();
+        if (bar == null)
+            return;
+
+        // enable up navigation
+        bar.setDisplayHomeAsUpEnabled(true);
+        bar.setNavigationMode(NAVIGATION_MODE_TABS);
+        bar.addTab(bar.newTab().setText(R.string.post).setTabListener(this));
+        bar.addTab(bar.newTab().setText(R.string.comments).setTabListener(this));
+    }
+
     private Bitmap downloadMedia() {
-        MediaResponse response = new MediaRequest(post.getFileUrl()).sendInBackground();
+        MediaResponse response = new MediaRequest(post.getMediaUrl()).sendInBackground();
         if (response == null)
             throw new RuntimeException("Could not download post media");
         else if (response.isError())
@@ -254,25 +297,12 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             View v = super.getView(position, convertView, parent);
+            // set the date, the comment content is set automatically in the super class using
+            // Comment.toString()
             Date date = getItem(position).getCreationDate();
             ((TextView) v.findViewById(R.id.created)).setText(getTimeDisplay(date));
             return v;
         }
-    }
-
-    private static String getTimeDisplay(Date date) {
-        Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
-        long diff = now.getTime() - date.getTime();
-        long seconds = diff / 1000;
-        if (seconds < 60)
-            return "<1m";
-        long minutes = seconds / 60;
-        if (minutes < 60)
-            return minutes + "m";
-        long hours = minutes / 60;
-        if (hours < 24)
-            return hours + "h";
-        return (hours / 24) + "d";
     }
 
     /**
@@ -313,7 +343,8 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
 
         @Override
         public void onClick(View btn) {
-            // get comment content
+            // called when the "reply" button is clicked
+            // get comment content from view
             EditText field = (EditText) view.findViewById(R.id.text_comment);
             String content = field.getText().toString().trim();
             Bundle args = getArguments();
@@ -332,7 +363,7 @@ public class PostDetailActivity extends FragmentActivity implements ActionBar.Ta
                 adapter.add(comment);
             }
 
-            // remove focus from reply box
+            // clear and remove focus from reply box
             field.setText("", TextView.BufferType.EDITABLE);
             view.requestFocus();
             hideKeyboard();

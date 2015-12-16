@@ -73,6 +73,6 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
     }
 
     private void showLocationErrorDialog() {
-        Dialogs.locationError(c, (dialog, which) -> connect(callback)).show();
+        E.location(c, (dialog, which) -> connect(callback)).show();
     }
 }

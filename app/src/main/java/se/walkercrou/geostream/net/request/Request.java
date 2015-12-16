@@ -15,7 +15,13 @@ import se.walkercrou.geostream.util.G;
  * @param <T> type of response expected
  */
 public abstract class Request<T extends Response> {
+    /**
+     * Server root for RESTful resources.
+     */
     public static final String RESOURCE_ROOT = "/api/";
+    /**
+     * Server root for file storage for resources.
+     */
     public static final String MEDIA_ROOT = "/media/";
 
     protected URL url;

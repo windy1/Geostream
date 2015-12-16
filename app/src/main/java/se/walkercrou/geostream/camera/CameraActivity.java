@@ -16,17 +16,21 @@ import java.util.Arrays;
 
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.post.Post;
-import se.walkercrou.geostream.util.Dialogs;
+import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 import se.walkercrou.geostream.util.LocationManager;
+
+import static android.hardware.Camera.*;
 
 /**
  * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to
  * be posted.
+ *
+ * TODO: Record video
  */
 @SuppressWarnings("deprecation")
-public class CameraActivity extends Activity implements Camera.PictureCallback,
-        Camera.ShutterCallback, Camera.PreviewCallback {
+public class CameraActivity extends Activity implements PictureCallback, ShutterCallback,
+        PreviewCallback {
 
     // camera stuff
     private static final long PROGRESS_PAUSE_TIME = 100; // 10 seconds
@@ -113,6 +117,8 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
         // called every frame while the preview is running
     }
 
+    // -- Methods called by XML --
+
     public void resumePreview(View view) {
         // called when the cancel button is clicked
         // resume the preview
@@ -125,16 +131,18 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
         // called when the send button is clicked
         // check for network access
         if (!G.isConnectedToNetwork(this))
-            Dialogs.connectionError(this, (dialog, which) -> sendPost(null)).show();
+            E.connection(this, (dialog, which) -> sendPost(null)).show();
         else {
             // try to create post
-            Post post = Post.create(locationManager.getLastLocation(), "image/jpeg", imageData,
-                    (error) -> Dialogs.sendPostError(this).show());
+            Post post = Post.create(locationManager.getLastLocation(), imageData,
+                    (error) -> E.postSend(this).show());
             // open activity if created
             if (post != null)
                 post.startActivity(this);
         }
     }
+
+    // ---------------------------
 
     private void showPreviewButtons() {
         // hide the cancel and send buttons and show the record button
@@ -166,10 +174,10 @@ public class CameraActivity extends Activity implements Camera.PictureCallback,
     private void openCamera() {
         // try to open the camera
         try {
-            cam = Camera.open();
+            cam = open();
         } catch (Exception e) {
             // show error dialog
-            Dialogs.openCameraError(this).show();
+            E.cameraOpen(this).show();
         }
     }
 

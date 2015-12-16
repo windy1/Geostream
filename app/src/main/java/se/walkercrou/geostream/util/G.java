@@ -29,11 +29,12 @@ public final class G {
     public boolean splashed;
 
     public static G app;
-    public static final DateFormat DATE_FORMAT
+    public static final String CLIENT_SECRETS_FILE_NAME = "ClientSecrets";
+    public static final DateFormat STANDARD_DATE_FORMAT
             = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
     static {
-        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+        STANDARD_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
     private G(Context context) {
@@ -104,11 +105,21 @@ public final class G {
         return netInfo != null && netInfo.isConnected();
     }
 
+    /**
+     * Parses a server-formatted date string using the {@link #STANDARD_DATE_FORMAT}.
+     *
+     * @param str to parse
+     * @return formatted date
+     * @throws ParseException if the string is malformed
+     */
     public static Date parseDateString(String str) throws ParseException {
-        G.d("date = " + str);
+        // e.g. "2015-12-16T19:11:46.202321Z"
+        // time and date separated by "T" char
         String[] dateTime = str.split("T");
         String date = dateTime[0];
+        // we don't really care about the millis, cut off time from the dot
         String time = dateTime[1].substring(0, dateTime[1].indexOf('.'));
-        return DATE_FORMAT.parse(date + ' ' + time);
+        // parse with standard date format, in UTC, like the server
+        return STANDARD_DATE_FORMAT.parse(date + ' ' + time);
     }
 }

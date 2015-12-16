@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="server_url">http://10.245.73.224:8000</string>
+    <string name="server_url">http://10.245.77.137:8000</string>
 </resources>

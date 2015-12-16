@@ -91,12 +91,11 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
      * Represents a File that will be written to a multipart/form-data HTTP request.
      */
     public static class FileValue {
-        private final String name, type;
+        private final String name;
         private final byte[] data;
 
-        public FileValue(String name, String type, byte[] data) {
+        public FileValue(String name, byte[] data) {
             this.name = name;
-            this.type = type;
             this.data = data;
         }
     }
