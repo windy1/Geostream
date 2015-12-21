@@ -246,6 +246,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         recording = false;
         G.d("Done recording");
 
+        // stop recorder and reset for future use
         recorder.stop();
         recorder.reset();
         recorder.release();

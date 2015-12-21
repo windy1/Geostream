@@ -67,12 +67,18 @@ public class Post extends Resource implements Parcelable {
      */
     public static final String BASE_FILE_NAME = "media_file";
 
+    /**
+     * File extension used when the Post's media is an image.
+     */
     public static final String IMAGE_FILE_EXTENSION = "bmp";
+
+    /**
+     * File extension used when the Post's media is a video.
+     */
     public static final String VIDEO_FILE_EXTENSION = "mp4";
 
     private int id;
     private final Location location;
-    private byte[] data;
     private String fileUrl;
     private Date created;
     protected List<Comment> comments = new ArrayList<>();
@@ -100,26 +106,6 @@ public class Post extends Resource implements Parcelable {
      */
     public Location getLocation() {
         return location;
-    }
-
-    /**
-     * Returns a list of frames for the media to be posted. If an image, the returned list will be
-     * of length one.
-     *
-     * @return media data
-     */
-    public byte[] getMediaData() {
-        return data;
-    }
-
-    /**
-     * Returns true if this post is a video determined by whether the data list is of length one.
-     *
-     * @return true if video
-     */
-    public boolean isVideo() {
-        // TODO: Implement video
-        return false;
     }
 
     /**
@@ -293,6 +279,12 @@ public class Post extends Resource implements Parcelable {
         return post;
     }
 
+    /**
+     * Generates a file name for any post.
+     *
+     * @param video true if the post is a video
+     * @return file name
+     */
     public static String fileName(boolean video) {
         return BASE_FILE_NAME + '.' + (video ? VIDEO_FILE_EXTENSION : IMAGE_FILE_EXTENSION);
     }

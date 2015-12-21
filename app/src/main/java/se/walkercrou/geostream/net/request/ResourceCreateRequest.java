@@ -106,18 +106,15 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
     public static class MediaData {
         private final String name;
         private final Object data;
-        private final boolean video;
 
         public MediaData(String name, File data) {
             this.name = name;
             this.data = data;
-            video = true;
         }
 
         public MediaData(String name, byte[] data) {
             this.name = name;
             this.data = data;
-            video = false;
         }
     }
 }
