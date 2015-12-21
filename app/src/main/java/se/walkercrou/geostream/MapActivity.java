@@ -19,6 +19,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.melnykov.fab.FloatingActionButton;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +37,10 @@ import se.walkercrou.geostream.util.LocationManager;
 public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerClickListener,
         GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraChangeListener {
 
+    /**
+     * The minimum map zoom enforced by this app. The reasoning behind this is to only make posts
+     * that are in the user's vicinity available as a design choice.
+     */
     public static final int MIN_MAP_ZOOM = 17;
 
     private GoogleMap map;
@@ -110,8 +115,13 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         List<Post> newPosts = getPosts();
 
         // remove posts that are no longer present
-        for (Marker marker : posts.keySet()) {
-            Post oldPost = posts.get(marker);
+        Iterator<Map.Entry<Marker, Post>> iter = posts.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<Marker, Post> entry = iter.next();
+            Marker marker = entry.getKey();
+            Post oldPost = entry.getValue();
+
+            // look for posts that are not in the newPosts list
             boolean found = false;
             for (Post newPost : newPosts) {
                 if (oldPost.getId() == newPost.getId())
@@ -121,7 +131,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             if (!found) {
                 G.d("removing marker");
                 marker.remove();
-                posts.remove(marker);
+                iter.remove();
             }
         }
 
