@@ -1,6 +1,8 @@
 package se.walkercrou.geostream.net.request;
 
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
@@ -44,7 +46,7 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
         conn.setDoOutput(true);
 
         // form writing constants
-        final String lineEnd = "\r\n";
+        final String newLine = "\r\n";
         final String twoHyphens = "--";
         final String boundary = "GeostreamFormBoundary" + System.currentTimeMillis();
 
@@ -57,27 +59,38 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
         // start request
         DataOutputStream out = new DataOutputStream(conn.getOutputStream());
         // write form boundary (separates form data)
-        out.writeBytes(twoHyphens + boundary + lineEnd);
+        out.writeBytes(twoHyphens + boundary + newLine);
         for (String param : parameters.keySet()) {
             // start form data, write content disposition
             String contentDisposition = "Content-Disposition: form-data; name=\"" + param + '"';
             Object value = parameters.get(param);
-            if (value instanceof FileValue) {
+            if (value instanceof MediaData) {
                 // parameter value is a file, add extra file info to content disposition
-                FileValue fileValue = (FileValue) value;
-                contentDisposition += ";filename=\"" + fileValue.name + '"' + lineEnd;
+                MediaData mediaData = (MediaData) value;
+                contentDisposition += ";filename=\"" + mediaData.name + '"' + newLine;
                 out.writeBytes(contentDisposition);
-                out.writeBytes(lineEnd); // blank line between CD and data
-                out.write(fileValue.data);
+                out.writeBytes(newLine); // blank line between CD and data
+                // write file data to stream
+                if (mediaData.data instanceof File) {
+                    // data is in the form of a file (video)
+                    File file = (File) mediaData.data;
+                    byte[] buffer = new byte[(int) file.length()];
+                    FileInputStream fin = new FileInputStream(file);
+                    fin.read(buffer);
+                    fin.close();
+                    out.write(buffer);
+                } else
+                    // file is already a raw byte array
+                    out.write((byte[]) mediaData.data);
             } else {
-                contentDisposition += lineEnd;
+                contentDisposition += newLine;
                 out.writeBytes(contentDisposition);
-                out.writeBytes(lineEnd); // blank line between CD and data
+                out.writeBytes(newLine); // blank line between CD and data
                 out.writeBytes(value.toString());
             }
             // end form data
-            out.writeBytes(lineEnd);
-            out.writeBytes(twoHyphens + boundary + lineEnd);
+            out.writeBytes(newLine);
+            out.writeBytes(twoHyphens + boundary + newLine);
         }
 
         // close output stream
@@ -90,13 +103,21 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
     /**
      * Represents a File that will be written to a multipart/form-data HTTP request.
      */
-    public static class FileValue {
+    public static class MediaData {
         private final String name;
-        private final byte[] data;
+        private final Object data;
+        private final boolean video;
 
-        public FileValue(String name, byte[] data) {
+        public MediaData(String name, File data) {
             this.name = name;
             this.data = data;
+            video = true;
+        }
+
+        public MediaData(String name, byte[] data) {
+            this.name = name;
+            this.data = data;
+            video = false;
         }
     }
 }

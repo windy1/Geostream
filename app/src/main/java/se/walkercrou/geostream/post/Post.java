@@ -18,7 +18,7 @@ import java.util.List;
 import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
-import se.walkercrou.geostream.net.request.ResourceCreateRequest.FileValue;
+import se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaData;
 import se.walkercrou.geostream.net.request.ResourceDetailRequest;
 import se.walkercrou.geostream.net.request.ResourceListRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
@@ -43,7 +43,7 @@ public class Post extends Resource implements Parcelable {
     /**
      * File (byte array): The file associated with the post.
      */
-    public static final String PARAM_FILE = "media_file";
+    public static final String PARAM_MEDIA_FILE = "media_file";
     /**
      * Boolean: True if this post contains a video.
      */
@@ -65,7 +65,10 @@ public class Post extends Resource implements Parcelable {
      * What we tell the server to name the file. Absolutely arbitrary. May also be renamed by the
      * server.
      */
-    public static final String BASE_FILE_NAME = "media_file.bmp";
+    public static final String BASE_FILE_NAME = "media_file";
+
+    public static final String IMAGE_FILE_EXTENSION = "bmp";
+    public static final String VIDEO_FILE_EXTENSION = "mp4";
 
     private int id;
     private final Location location;
@@ -200,13 +203,13 @@ public class Post extends Resource implements Parcelable {
      * @param callback error callback
      * @return new post object
      */
-    public static Post create(Location location, byte[] data, ErrorCallback callback) {
+    public static Post create(Location location, MediaData data, ErrorCallback callback) {
         // post to server
         ResourceCreateRequest<Post> request
                 = new ResourceCreateRequest<>(Post.class, Resource.POSTS);
         request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
-                .set(PARAM_FILE, new FileValue(BASE_FILE_NAME, data))
+                .set(PARAM_MEDIA_FILE, data)
                 .set(PARAM_IS_VIDEO, false);
         ResourceResponse<Post> response = request.sendInBackground();
 
@@ -271,7 +274,7 @@ public class Post extends Resource implements Parcelable {
         Location loc = new Location(G.app.name);
         loc.setLatitude(obj.getDouble(PARAM_LAT));
         loc.setLongitude(obj.getDouble(PARAM_LNG));
-        String fileUrl = obj.getString(PARAM_FILE);
+        String fileUrl = obj.getString(PARAM_MEDIA_FILE);
         int id = obj.getInt(PARAM_ID);
         Date created = G.parseDateString(obj.getString(PARAM_CREATED));
         Post post = new Post(id, loc, fileUrl, created);
@@ -288,6 +291,10 @@ public class Post extends Resource implements Parcelable {
             G.app.secrets.edit().putString(Integer.toString(id), clientSecret).commit();
 
         return post;
+    }
+
+    public static String fileName(boolean video) {
+        return BASE_FILE_NAME + '.' + (video ? VIDEO_FILE_EXTENSION : IMAGE_FILE_EXTENSION);
     }
 
     /*
