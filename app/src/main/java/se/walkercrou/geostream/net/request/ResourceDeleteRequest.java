@@ -1,5 +1,7 @@
 package se.walkercrou.geostream.net.request;
 
+import android.content.Context;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 
@@ -15,9 +17,9 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
 public class ResourceDeleteRequest <T extends Resource> extends ResourceDetailRequest<T> {
     private final String clientSecret;
 
-    public ResourceDeleteRequest(Class<T> resourceClass, String resourceName, int resourceId,
+    public ResourceDeleteRequest(Context c, Class<T> resourceClass, String resourceName, int resourceId,
                                  String clientSecret) {
-        super(resourceClass, resourceName, resourceId);
+        super(c, resourceClass, resourceName, resourceId);
         this.clientSecret = clientSecret;
     }
 
@@ -26,6 +28,6 @@ public class ResourceDeleteRequest <T extends Resource> extends ResourceDetailRe
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("DELETE");
         conn.setRequestProperty("ClientSecret", clientSecret);
-        return new ResourceResponse(resourceClass, conn);
+        return new ResourceResponse(c, resourceClass, conn);
     }
 }

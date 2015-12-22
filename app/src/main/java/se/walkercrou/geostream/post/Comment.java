@@ -1,11 +1,13 @@
 package se.walkercrou.geostream.post;
 
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -60,20 +62,21 @@ public class Comment extends Resource implements Parcelable {
 
     /**
      * Creates a new Comment for the specified Post. This method is protected for consistency. Use
-     * {@link Post#comment(String, ErrorCallback)} instead.
+     * {@link Post#comment(Context, String, ErrorCallback)} instead.
      *
      * @param post to comment on
      * @param content of comment
      * @param callback error callback
      * @return newly created comment
-     * @see Post#comment(String, ErrorCallback)
+     * @see Post#comment(Context, String, ErrorCallback)
      */
-    protected static Comment create(Post post, String content, ErrorCallback callback) {
+    protected static Comment create(Context c, Post post, String content, ErrorCallback callback)
+            throws IOException {
         // send request to server
         ResourceCreateRequest<Comment> request
-                = new ResourceCreateRequest<>(Comment.class, Resource.COMMENTS);
+                = new ResourceCreateRequest<>(c, Comment.class, Resource.COMMENTS);
         request.set(PARAM_POST, post.getId()).set(PARAM_CONTENT, content);
-        ResourceResponse<Comment> response = request.sendInBackground();
+        ResourceResponse<Comment> response = request.sendInBackground(c);
 
         // check for error
         if (response == null) {
@@ -97,7 +100,7 @@ public class Comment extends Resource implements Parcelable {
      * @return new comment
      * @throws JSONException if error with json
      */
-    public static Comment parse(JSONObject obj) throws JSONException, ParseException {
+    public static Comment parse(Context c, JSONObject obj) throws JSONException, ParseException {
         return new Comment(obj.getString(PARAM_CONTENT),
                 G.parseDateString(obj.getString(PARAM_CREATED)));
     }

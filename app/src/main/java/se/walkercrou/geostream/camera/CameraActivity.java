@@ -92,8 +92,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         previewView = (FrameLayout) findViewById(R.id.camera_preview);
 
         // connect to location services
-        locationManager = new LocationManager(this);
-        locationManager.connect();
+        locationManager = new LocationManager();
+        locationManager.connect(this);
     }
 
     @Override
@@ -123,7 +123,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     @Override
     public void onShutter() {
         // called when the shutter sound is made
-        // do nothing
     }
 
     @Override
@@ -135,13 +134,12 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     public void resumePreview(View view) {
         if (outputFile != null && outputFile.exists()) {
-            // reset from video playback
+            // video file exists
             preview.stopPlayback();
             outputFile.delete();
             outputFile = null;
-            setupCamera();
+            setupCamera(); // reset camera
         } else {
-            // reset from image
             cam.startPreview();
             imageData = null;
         }
@@ -162,8 +160,16 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
                 data = new MediaData(Post.fileName(false), imageData);
 
             // try to create post
-            Post post = Post.create(locationManager.getLastLocation(), data,
-                    (error) -> E.postSend(this).show());
+            Post post;
+            try {
+                post = Post.create(this, locationManager.getLastLocation(), data,
+                        (error) -> E.postSend(this).show());
+            } catch (IOException e) {
+                E.postSend(this).show();
+                e.printStackTrace();
+                return;
+            }
+
             // open activity if created
             if (post != null)
                 post.startActivity(this);

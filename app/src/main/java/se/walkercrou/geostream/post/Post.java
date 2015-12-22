@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -154,8 +155,8 @@ public class Post extends Resource implements Parcelable {
      * @param callback in case of error
      * @return comment
      */
-    public Comment comment(String content, ErrorCallback callback) {
-        return Comment.create(this, content, callback);
+    public Comment comment(Context c, String content, ErrorCallback callback) throws IOException {
+        return Comment.create(c, this, content, callback);
     }
 
     /**
@@ -163,11 +164,11 @@ public class Post extends Resource implements Parcelable {
      *
      * @param callback in case of error
      */
-    public void refreshComments(ErrorCallback callback) {
+    public void refreshComments(Context c, ErrorCallback callback) throws IOException {
         // send request to server
         ResourceDetailRequest<Post> request
-                = new ResourceDetailRequest<>(Post.class, Resource.POSTS, id);
-        ResourceResponse<Post> response = request.sendInBackground();
+                = new ResourceDetailRequest<>(c, Post.class, Resource.POSTS, id);
+        ResourceResponse<Post> response = request.sendInBackground(c);
 
         // check for error
         if (response == null) {
@@ -189,15 +190,16 @@ public class Post extends Resource implements Parcelable {
      * @param callback error callback
      * @return new post object
      */
-    public static Post create(Location location, MediaData data, ErrorCallback callback) {
+    public static Post create(Context c, Location location, MediaData data,
+                              ErrorCallback callback) throws IOException {
         // post to server
         ResourceCreateRequest<Post> request
-                = new ResourceCreateRequest<>(Post.class, Resource.POSTS);
+                = new ResourceCreateRequest<>(c, Post.class, Resource.POSTS);
         request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_MEDIA_FILE, data)
                 .set(PARAM_IS_VIDEO, false);
-        ResourceResponse<Post> response = request.sendInBackground();
+        ResourceResponse<Post> response = request.sendInBackground(c);
 
         G.d("response = " + response);
 
@@ -230,10 +232,10 @@ public class Post extends Resource implements Parcelable {
      * @param callback error callback
      * @return list of all posts
      */
-    public static List<Post> all(ErrorCallback callback) {
+    public static List<Post> all(Context c, ErrorCallback callback) throws IOException {
         // send request to server
-        ResourceResponse<Post> response = new ResourceListRequest<>(Post.class, Resource.POSTS)
-                .sendInBackground();
+        ResourceResponse<Post> response = new ResourceListRequest<>(c, Post.class, Resource.POSTS)
+                .sendInBackground(c);
         G.d(response);
 
         // read response
@@ -255,7 +257,7 @@ public class Post extends Resource implements Parcelable {
      * @return new Post
      * @throws JSONException if error with JSONObject
      */
-    public static Post parse(JSONObject obj) throws JSONException, ParseException {
+    public static Post parse(Context c, JSONObject obj) throws JSONException, ParseException {
         // build post from object
         Location loc = new Location(G.app.name);
         loc.setLatitude(obj.getDouble(PARAM_LAT));
@@ -268,7 +270,7 @@ public class Post extends Resource implements Parcelable {
         // parse comments
         JSONArray comments = obj.getJSONArray(PARAM_COMMENTS);
         for (int i = 0; i < comments.length(); i++)
-            post.comments.add(Comment.parse(comments.getJSONObject(i)));
+            post.comments.add(Comment.parse(c, comments.getJSONObject(i)));
 
         // see if there's a client secret included, if so, save it to the device for later use
         // the client secret is only returned on initial post creation

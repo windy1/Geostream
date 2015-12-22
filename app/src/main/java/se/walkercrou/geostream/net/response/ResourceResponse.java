@@ -1,5 +1,7 @@
 package se.walkercrou.geostream.net.response;
 
+import android.content.Context;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,7 +30,8 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
 
     private static final String FIELD_ERROR_DETAIL = "detail";
 
-    public ResourceResponse(Class<T> resourceType, InputStream in, int statusCode, String statusMessage) {
+    public ResourceResponse(Context c, Class<T> resourceType, InputStream in, int statusCode,
+                            String statusMessage) {
         super(in, statusCode, statusMessage);
 
         StringBuilder builder = new StringBuilder();
@@ -37,7 +40,7 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
         // get "parse" static method in Resource class
         Method parser;
         try {
-            parser = resourceType.getMethod("parse", JSONObject.class);
+            parser = resourceType.getMethod("parse", Context.class, JSONObject.class);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
@@ -56,13 +59,13 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
             if (isError())
                 errorDetail = obj.getString(FIELD_ERROR_DETAIL);
             else
-                results.add((T) parser.invoke(null, obj));
+                results.add((T) parser.invoke(null, c, obj));
         } catch (JSONException e) {
             try {
                 // parse each json object within the array
                 array = new JSONArray(builder.toString());
                 for (int i = 0; i < array.length(); i++)
-                    results.add((T) parser.invoke(null, array.get(i)));
+                    results.add((T) parser.invoke(null, c, array.get(i)));
             } catch (JSONException f) {
                 // ignore further json exceptions
             } catch (Exception f) {
@@ -76,9 +79,10 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
 
     }
 
-    public ResourceResponse(Class<T> resourceType, HttpURLConnection conn)
+    public ResourceResponse(Context c, Class<T> resourceType, HttpURLConnection conn)
             throws IOException {
-        this(resourceType, conn.getInputStream(), conn.getResponseCode(), conn.getResponseMessage());
+        this(c, resourceType, conn.getInputStream(), conn.getResponseCode(),
+                conn.getResponseMessage());
     }
 
     /**

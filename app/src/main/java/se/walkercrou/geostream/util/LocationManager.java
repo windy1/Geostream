@@ -20,31 +20,28 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
     private Runnable callback;
     private Context c;
 
-    public LocationManager(Context c) {
-        this.c = c;
+    /**
+     * Attempts to connect to the API and then runs the specified callback on success.
+     *
+     * @param callback to call when connected
+     */
+    public void connect(Context c, Runnable callback) {
+        G.d("connecting");
         // build google api client
         client = new Builder(c)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-    }
-
-    /**
-     * Attempts to connect to the API and then runs the specified callback on success.
-     *
-     * @param callback to call when connected
-     */
-    public void connect(Runnable callback) {
-        this.callback = callback;
         client.connect();
+        this.callback = callback;
     }
 
     /**
      * Attempts to connect to the API.
      */
-    public void connect() {
-        connect(null);
+    public void connect(Context c) {
+        connect(c, null);
     }
 
     /**
@@ -73,6 +70,6 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
     }
 
     private void showLocationErrorDialog() {
-        E.location(c, (dialog, which) -> connect(callback)).show();
+        E.location(c, (dialog, which) -> connect(c, callback)).show();
     }
 }

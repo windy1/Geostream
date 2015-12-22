@@ -30,6 +30,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -43,6 +44,7 @@ import se.walkercrou.geostream.net.request.MediaRequest;
 import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
 import se.walkercrou.geostream.net.response.MediaResponse;
 import se.walkercrou.geostream.net.response.ResourceResponse;
+import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 
 import static android.app.ActionBar.*;
@@ -79,7 +81,7 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         clientSecret = G.app.secrets.getString(Integer.toString(post.getId()), null);
 
         // get bitmap from server
-        media = downloadMedia();
+        downloadMedia();
 
         // setup view paging between post and comments
         PostDetailAdapter adapter = new PostDetailAdapter(getSupportFragmentManager());
@@ -141,7 +143,11 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
                         .setMessage(R.string.confirm_delete_message)
                         .setPositiveButton(R.string.action_delete, (dialog, which) -> {
                             dialog.dismiss();
-                            discard();
+                            try {
+                                discard();
+                            } catch (IOException e) {
+                                E.discard(this).show();
+                            }
                         })
                         .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
                         .show();
@@ -154,10 +160,10 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
     /**
      * Attempts to delete this Post on the server and client.
      */
-    public void discard() {
+    public void discard() throws IOException {
         G.d("client secret = " + clientSecret);
-        ResourceResponse<Post> response = new ResourceDeleteRequest<>(Post.class, Resource.POSTS,
-                post.getId(), clientSecret).sendInBackground();
+        ResourceResponse<Post> response = new ResourceDeleteRequest<>(this, Post.class,
+                Resource.POSTS, post.getId(), clientSecret).sendInBackground(this);
         if (response == null)
             throw new RuntimeException("Could not discard post");
         else if (response.isError())
@@ -207,8 +213,15 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         bar.addTab(bar.newTab().setText(R.string.comments).setTabListener(this));
     }
 
-    private Bitmap downloadMedia() {
-        MediaResponse response = new MediaRequest(post.getMediaUrl()).sendInBackground();
+    private void downloadMedia() {
+        MediaResponse response;
+        try {
+            response = new MediaRequest(post.getMediaUrl()).sendInBackground(this);
+        } catch (IOException e) {
+            E.connection(this, (d, w) -> downloadMedia());
+            return;
+        }
+
         if (response == null)
             throw new RuntimeException("Could not download post media");
         else if (response.isError())
@@ -220,7 +233,7 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         Bitmap bmp = response.get();
         Matrix matrix = new Matrix();
         matrix.postRotate(90);
-        return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+        media = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
     }
 
     /**
@@ -357,7 +370,14 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
             }
 
             // create comment
-            Comment comment = post.comment(content, G::e);
+            Comment comment;
+            try {
+                comment = post.comment(getContext(), content, G::e);
+            } catch (IOException e) {
+                E.comment(getContext()).show();
+                return;
+            }
+
             if (comment != null) {
                 G.d(comment.getContent());
                 adapter.add(comment);
@@ -379,8 +399,15 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         @Override
         public void onRefresh() {
             // retrieve new comments from the server and update the adapter
+            Context c = getContext();
             new Handler().post(() -> {
-                post.refreshComments(G::e);
+                try {
+                    post.refreshComments(c, G::e);
+                } catch (IOException e) {
+                    Toast.makeText(c, c.getString(R.string.error_refresh_comments),
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
                 adapter.clear();
                 adapter.addAll(post.getComments());
                 swipeLayout.setRefreshing(false);

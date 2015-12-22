@@ -1,5 +1,7 @@
 package se.walkercrou.geostream.net.request;
 
+import android.content.Context;
+
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,8 +24,8 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
     // Internal map of data to write
     private final Map<String, Object> parameters = new HashMap<>();
 
-    public ResourceCreateRequest(Class<T> resourceClass, String resourceName) {
-        super(resourceClass, resourceName);
+    public ResourceCreateRequest(Context c, Class<T> resourceClass, String resourceName) {
+        super(c, resourceClass, resourceName);
     }
 
     /**
@@ -97,7 +99,7 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
         out.flush();
         out.close();
 
-        return new ResourceResponse(resourceClass, conn);
+        return new ResourceResponse(c, resourceClass, conn);
     }
 
     /**

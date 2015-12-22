@@ -23,8 +23,20 @@ public final class E {
      * @return alert dialog
      */
     public static AlertDialog connection(Context c, OnClickListener tryAgainAction) {
+        G.e("could not connect to internet");
         String msg = c.getString(R.string.error_no_connection, G.app.name);
         return builder(c, msg).setPositiveButton(R.string.action_try_again, tryAgainAction).create();
+    }
+
+    /**
+     * Returns a dialog that explains that an internal error has occurred.
+     *
+     * @param c context
+     * @return error dialog
+     */
+    public static AlertDialog internal(Activity c) {
+        String msg = c.getString(R.string.error_internal, G.app.name);
+        return builder(c, msg).setPositiveButton(R.string.action_ok, ((d, w) -> c.finish())).show();
     }
 
     /**
@@ -34,8 +46,23 @@ public final class E {
      * @return alert dialog
      */
     public static AlertDialog postSend(Context c) {
+        G.e("could not send post to server");
         return builder(c, R.string.error_send_post)
-                .setPositiveButton(R.string.action_ok, (dialog, which) -> {})
+                .setPositiveButton(R.string.action_ok, (d, w) -> {})
+                .create();
+    }
+
+    public static AlertDialog discard(Context c) {
+        G.e("could not discard post");
+        return builder(c, R.string.error_discard)
+                .setPositiveButton(R.string.action_ok, (d, w) -> {})
+                .create();
+    }
+
+    public static AlertDialog comment(Context c) {
+        G.e("could not comment");
+        return builder(c, R.string.error_comment)
+                .setPositiveButton(R.string.action_ok, (d, w) -> {})
                 .create();
     }
 
@@ -46,8 +73,9 @@ public final class E {
      * @return alert dialog
      */
     public static AlertDialog cameraOpen(final Activity c) {
+        G.e("could not open camera");
         String msg = c.getString(R.string.error_no_camera, G.app.name);
-        return builder(c, msg).setPositiveButton(R.string.action_back, (dialog, which) -> c.finish()).create();
+        return builder(c, msg).setPositiveButton(R.string.action_back, (d, w) -> c.finish()).create();
     }
 
     /**
@@ -58,8 +86,21 @@ public final class E {
      * @return alert dialog
      */
     public static AlertDialog location(Context c, OnClickListener tryAgainAction) {
+        G.e("could not determine location");
         String msg = c.getString(R.string.error_no_location, G.app.name);
         return builder(c, msg).setPositiveButton(R.string.action_try_again, tryAgainAction).create();
+    }
+
+    /**
+     * Returns the dialog to display when an error occurs while creating the map.
+     *
+     * @param c activity
+     * @return dialog to display
+     */
+    public static AlertDialog map(Activity c) {
+        G.e("could not create map");
+        String msg = c.getString(R.string.error_map, G.app.name);
+        return builder(c, msg).setPositiveButton(R.string.action_ok, (d, w) -> c.finish()).create();
     }
 
     private static AlertDialog.Builder builder(Context c, int msgId) {
