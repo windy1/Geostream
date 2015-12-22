@@ -2,6 +2,8 @@ package se.walkercrou.geostream.camera;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -17,6 +19,8 @@ import java.io.IOException;
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private Camera cam;
     private final Camera.PreviewCallback callback;
+    private MediaPlayer player = new MediaPlayer();
+    private String dataSource;
     protected final SurfaceHolder holder;
 
     public CameraPreview(Context context, Camera.PreviewCallback callback) {
@@ -26,6 +30,30 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         holder = getHolder();
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+    }
+
+    public void startPlayback(String dataSource) {
+        stopPreviewAndFreeCamera();
+
+        player = new MediaPlayer();
+        player.setDisplay(holder);
+        player.setScreenOnWhilePlaying(true);
+        player.setLooping(true);
+        player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        try {
+            player.setDataSource(dataSource);
+            player.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        player.start();
+    }
+
+    public void stopPlayback() {
+        player.stop();
+        player.release();
     }
 
     /**
@@ -69,7 +97,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        if (holder.getSurface() == null)
+        if (holder.getSurface() == null || dataSource != null || cam == null)
             return;
 
         try {

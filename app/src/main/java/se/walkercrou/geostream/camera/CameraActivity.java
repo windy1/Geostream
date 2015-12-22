@@ -2,9 +2,7 @@ package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
 import android.hardware.Camera;
-import android.media.AudioManager;
 import android.media.CamcorderProfile;
-import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -53,6 +51,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private byte[] imageData;
 
     // ui stuff
+    private FrameLayout previewView;
     private ProgressBar recordingProgress;
     private int recordingProgressStatus = 0;
     private final Handler handler = new Handler(); // used for posting ui updates for progress bar
@@ -90,6 +89,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // setup progress bar for recording video
         recordingProgress = (ProgressBar) findViewById(R.id.progress_bar);
 
+        previewView = (FrameLayout) findViewById(R.id.camera_preview);
+
         // connect to location services
         locationManager = new LocationManager(this);
         locationManager.connect();
@@ -116,8 +117,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
             return;
         imageData = data;
         G.d("imageData = " + Arrays.toString(data));
-        // display the playback buttons
-        showPlaybackButtons();
+        showPlaybackButtons(); // display the playback buttons
     }
 
     @Override
@@ -134,16 +134,18 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     // -- Methods called by XML --
 
     public void resumePreview(View view) {
-        // called when the cancel button is clicked
-        cam.startPreview(); // resume the preview
-        showPreviewButtons(); // show the normal buttons again
-        imageData = null; // reset image data
-
-        // delete outputFile if exists
-        if (outputFile.exists()) {
+        if (outputFile != null && outputFile.exists()) {
+            // reset from video playback
+            preview.stopPlayback();
             outputFile.delete();
             outputFile = null;
+            setupCamera();
+        } else {
+            // reset from image
+            cam.startPreview();
+            imageData = null;
         }
+        showPreviewButtons();
     }
 
     public void sendPost(View view) {
@@ -194,7 +196,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         preview.setCamera(cam);
 
         // add preview to frame layout
-        FrameLayout previewView = (FrameLayout) findViewById(R.id.camera_preview);
+        previewView.removeAllViews();
         previewView.addView(preview);
     }
 
@@ -203,8 +205,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         try {
             cam = open();
         } catch (Exception e) {
-            // show error dialog
-            E.cameraOpen(this).show();
+            throw new RuntimeException("could not open camera : ", e);
         }
     }
 
@@ -222,6 +223,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
             throw new RuntimeException("could not create media output file : ", e);
         }
 
+        G.d("starting recorder");
+
         // configure recorder
         cam.unlock();
         recorder.setCamera(cam);
@@ -230,6 +233,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         recorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
         recorder.setOutputFile(outputFile.toString());
         recorder.setPreviewDisplay(preview.holder.getSurface());
+        recorder.setOrientationHint(90);
 
         try {
             recorder.prepare();
@@ -259,17 +263,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private void startPlayback() {
         G.d("Playing back video");
         showPlaybackButtons();
-
-        try {
-            MediaPlayer player = new MediaPlayer();
-            player.setDataSource(outputFile.toString());
-            player.setAudioStreamType(AudioManager.STREAM_SYSTEM);
-            player.setDisplay(preview.holder);
-            player.prepare();
-            player.start();
-        } catch (IOException e) {
-            throw new RuntimeException("error starting video playback : ", e);
-        }
+        preview.startPlayback(outputFile.toString());
     }
 
     private void startProgressBar() {
