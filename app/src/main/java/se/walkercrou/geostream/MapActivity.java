@@ -5,6 +5,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
@@ -80,8 +81,8 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        refresh(); // refresh map to reflect any changes
         if (!posts.containsKey(marker)) {
-            refresh(); // post has been deleted, refresh the map
             Toast.makeText(this, R.string.error_post_no_longer_exists, Toast.LENGTH_SHORT).show();
             return true;
         }
@@ -107,7 +108,6 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
      * Refreshes the posts on the map to reflect any new posts or deleted posts on the server.
      */
     public void refresh() {
-        G.d("refreshing");
         List<Post> newPosts;
         try {
             newPosts = getPosts();
@@ -119,6 +119,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
         // remove posts that are no longer present
         Iterator<Map.Entry<Marker, Post>> iter = posts.entrySet().iterator();
+        int removed = 0;
         while (iter.hasNext()) {
             Map.Entry<Marker, Post> entry = iter.next();
             Marker marker = entry.getKey();
@@ -134,10 +135,12 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             if (!found) {
                 marker.remove();
                 iter.remove();
+                removed++;
             }
         }
 
         // add new posts
+        int added = 0;
         for (Post newPost : newPosts) {
             boolean found = false;
             for (Post oldPost : posts.values()) {
@@ -146,8 +149,13 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             }
             if (!found) {
                 placePost(newPost);
+                added++;
             }
         }
+
+        G.i("Map refreshed.");
+        G.i("  Removed: " + removed);
+        G.i("  Added: " + added);
     }
 
     // -- Methods called from XML --
@@ -167,7 +175,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     private void onLocationEstablished() {
         // called when the devices location is established for the first time
-        G.d("onLocationEstablished");
+        G.i("Device location has been established.");
         setupMap();
         splashScreen.setVisibility(View.GONE);
         findViewById(R.id.fabs).setVisibility(View.VISIBLE); // make FAB container visible
@@ -207,6 +215,8 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
         centerMapOnLocation(location);
         refresh(); // place posts on map
+
+        G.i("Map initialized.");
     }
 
     private void centerMapOnLocation(Location location) {
@@ -225,8 +235,10 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     private void openPost(Marker marker) {
         // start a post detail activity
+        Post post = posts.get(marker);
+        G.i("Starting PostDetailActivity for Post #" + post.getId() + '.');
         Intent intent = new Intent(this, PostDetailActivity.class);
-        intent.putExtra(PostDetailActivity.EXTRA_POST, posts.get(marker));
+        intent.putExtra(PostDetailActivity.EXTRA_POST, post);
         startActivity(intent);
     }
 

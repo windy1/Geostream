@@ -25,6 +25,7 @@ import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -139,8 +140,8 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         switch (item.getItemId()) {
             case R.id.action_discard:
                 new AlertDialog.Builder(this)
-                        .setTitle(R.string.confirm_title)
-                        .setMessage(R.string.confirm_delete_message)
+                        .setTitle(R.string.title_confirm)
+                        .setMessage(R.string.prompt_confirm_delete)
                         .setPositiveButton(R.string.action_delete, (dialog, which) -> {
                             dialog.dismiss();
                             try {
@@ -209,14 +210,16 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         // enable up navigation
         bar.setDisplayHomeAsUpEnabled(true);
         bar.setNavigationMode(NAVIGATION_MODE_TABS);
-        bar.addTab(bar.newTab().setText(R.string.post).setTabListener(this));
-        bar.addTab(bar.newTab().setText(R.string.comments).setTabListener(this));
+        bar.addTab(bar.newTab().setText(R.string.title_activity_post).setTabListener(this));
+        bar.addTab(bar.newTab().setText(R.string.title_comments).setTabListener(this));
     }
 
     private void downloadMedia() {
+        String url = post.getMediaUrl();
+        G.i("Downloading Post media from: " + url);
         MediaResponse response;
         try {
-            response = new MediaRequest(post.getMediaUrl()).sendInBackground(this);
+            response = new MediaRequest(url).sendInBackground(this);
         } catch (IOException e) {
             E.connection(this, (d, w) -> downloadMedia());
             return;
@@ -286,8 +289,10 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
             Bundle args = getArguments();
 
             // set the image
-            ((ImageView) view.findViewById(R.id.media))
-                    .setImageBitmap(args.getParcelable(ARG_MEDIA));
+            FrameLayout fl = (FrameLayout) view.findViewById(R.id.media);
+            ImageView image = new ImageView(getContext());
+            image.setImageBitmap(args.getParcelable(ARG_MEDIA));
+            fl.addView(image);
 
             // set the time
             Post post = args.getParcelable(ARG_POST);
@@ -304,7 +309,7 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
      */
     public static class CommentAdapter extends ArrayAdapter<Comment> {
         public CommentAdapter(Context context, List<Comment> comments) {
-            super(context, R.layout.comment, R.id.content, comments);
+            super(context, R.layout.list_item_comment, R.id.content, comments);
         }
 
         @Override

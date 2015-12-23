@@ -115,8 +115,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // called twice sometimes, once with null data for some reason
         if (data == null)
             return;
+        G.i("Image captured.");
         imageData = data;
-        G.d("imageData = " + Arrays.toString(data));
         showPlaybackButtons(); // display the playback buttons
     }
 
@@ -147,6 +147,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     }
 
     public void sendPost(View view) {
+        G.i("Sending post to server.");
         // called when the send button is clicked
         // check for network access
         if (!G.isConnectedToNetwork(this))
@@ -180,6 +181,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     private void showPreviewButtons() {
         // hide the cancel and send buttons and show the record button
+        G.i("Displaying preview buttons.");
         sendBtn.hide();
         recordBtn.show();
         cancelBtn.setVisibility(View.GONE);
@@ -187,6 +189,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     private void showPlaybackButtons() {
         // hide record button and show cancel and send buttons
+        G.i("Displaying playback buttons.");
         recordBtn.hide();
         sendBtn.show();
         cancelBtn.setVisibility(View.VISIBLE);
@@ -204,6 +207,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // add preview to frame layout
         previewView.removeAllViews();
         previewView.addView(preview);
+
+        G.i("Camera initialized.");
     }
 
     private void openCamera() {
@@ -217,19 +222,15 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     private boolean startRecording(View view) {
         recording = true;
-        G.d("Recording");
         new Thread(this::startProgressBar).start();
 
         // create output file
         outputFile = new File(getExternalCacheDir(), Post.fileName(true));
-        G.d("outputFile = " + outputFile);
         try {
             outputFile.createNewFile();
         } catch (IOException e) {
             throw new RuntimeException("could not create media output file : ", e);
         }
-
-        G.d("starting recorder");
 
         // configure recorder
         cam.unlock();
@@ -249,12 +250,13 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
         recorder.start();
 
+        G.i("Recording video.");
+
         return true;
     }
 
     private boolean stopRecording() {
         recording = false;
-        G.d("Done recording");
 
         // stop recorder and reset for future use
         recorder.stop();
@@ -262,12 +264,13 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         recorder.release();
         cam.lock();
 
+        G.i("Recording complete. Starting playback.");
+
         startPlayback();
         return true;
     }
 
     private void startPlayback() {
-        G.d("Playing back video");
         showPlaybackButtons();
         preview.startPlayback(outputFile.toString());
     }

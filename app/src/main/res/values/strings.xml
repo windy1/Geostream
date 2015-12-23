@@ -1,36 +1,56 @@
 <resources>
+    <!-- Titles -->
     <string name="app_name" translatable="false">Geostream</string>
     <string name="title_activity_post">Post</string>
+    <string name="title_error">Uh oh!</string>
+    <string name="title_comments">Comments</string>
+    <string name="title_confirm">Hold up!</string>
 
+    <!-- Actions -->
     <string name="action_cancel">Cancel</string>
     <string name="action_back">Back</string>
     <string name="action_try_again">Try again</string>
     <string name="action_ok">OK</string>
-
-    <string name="error_title">Uh oh!</string>
-    <string name="error_no_camera">%s could not open your device\'s camera.</string>
-    <string name="error_send_post">Something went wrong while uploading your post. Please check your
-        internet connection and try again.</string>
-    <string name="error_no_connection">%s could not connect to the server. Please check your
-        internet connection and try again.</string>
-    <string name="content_post">Post</string>
-    <string name="error_no_location">%s could not determine your location. Please check your
-        internet connection, make sure location services are enabled, and try again.</string>
-    <string name="description_splash">Splash screen</string>
-    <string name="action_discard">Discard</string>
-    <string name="post">Post</string>
-    <string name="comments">Comments</string>
-    <string name="hint_comment">Enter comment</string>
-    <string name="refresh">Refresh</string>
-    <string name="send">Send</string>
-    <string name="error_empty_reply">Please enter a reply first.</string>
-    <string name="confirm_title">Hold up!</string>
-    <string name="confirm_delete_message">Are you sure you want to delete this? This cannot be undone.</string>
     <string name="action_delete">Delete</string>
+
+    <!-- Errors -->
+    <string name="error_no_camera">%s could not open your device\'s camera.</string>
+    <string name="error_send_post">
+        Something went wrong while uploading your post. Please check your internet connection and
+        try again.
+    </string>
+    <string name="error_no_connection">
+        %s could not connect to the server. Please check your internet connection and try again.
+    </string>
+    <string name="error_no_location">
+        %s could not determine your location. Please check your internet connection, make sure
+        location services are enabled, and try again.
+    </string>
     <string name="error_post_no_longer_exists">This post no longer exists.</string>
     <string name="error_map">%s could not finish creating the map.</string>
     <string name="error_internal">An internal error occurred.</string>
-    <string name="error_discard">Something went wrong when deleting your post. Please check your internet connection and try again.</string>
-    <string name="error_comment">Something went wrong when commenting on this post. Please check your internet connection and try again.</string>
-    <string name="error_refresh_comments">Could not refresh comments for post. Please check your internet connection and try again.</string>
+    <string name="error_discard">
+        Something went wrong when deleting your post. Please check your internet connection and try
+        again.
+    </string>
+    <string name="error_comment">
+        Something went wrong when commenting on this post. Please check your internet connection and
+        try again.
+    </string>
+    <string name="error_refresh_comments">
+        Could not refresh comments for post. Please check your internet connection and try again.
+    </string>
+    <string name="error_empty_reply">Please enter a reply first.</string>
+
+    <!-- Content descriptions -->
+    <string name="description_splash">Splash screen</string>
+    <string name="description_send">Send</string>
+
+    <!-- EditText hints -->
+    <string name="hint_comment">Enter comment</string>
+
+    <!-- Message prompts -->
+    <string name="prompt_confirm_delete">
+        Are you sure you want to delete this? This cannot be undone.
+    </string>
 </resources>

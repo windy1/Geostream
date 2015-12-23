@@ -36,6 +36,7 @@
         tools:context=".MapsActivity"
         android:name="com.google.android.gms.maps.SupportMapFragment" />
 
+    <!-- Button container -->
     <LinearLayout
         android:id="@+id/fabs"
         android:visibility="invisible"
@@ -46,6 +47,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
+        <!-- Refresh map -->
         <com.melnykov.fab.FloatingActionButton
             android:id="@+id/fab_refresh"
             android:onClick="refresh"

@@ -26,7 +26,6 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
      * @param callback to call when connected
      */
     public void connect(Context c, Runnable callback) {
-        G.d("connecting");
         // build google api client
         client = new Builder(c)
                 .addConnectionCallbacks(this)

@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Tab within activity_post_detail.xml that contains the Post's media -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
-    <ImageView
-        android:id="@+id/media"
-        android:layout_above="@+id/created"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
 
+    <!-- Element that contains either the image or video that belongs to the Post. -->
+    <FrameLayout
+        android:id="@+id/media"
+        android:layout_above="@id/created"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </FrameLayout>
+
+    <!-- Time display -->
     <TextView
         android:id="@+id/created"
         android:layout_width="match_parent"

@@ -26,10 +26,20 @@ public final class G {
     // Collection of "client_secrets" for Post manipulation
     public final SharedPreferences secrets;
     // True if the splash screen has been displayed before
-    public boolean splashed;
+    public boolean splashed = false;
 
+    /**
+     * Singleton object for accessing properties.
+     */
     public static G app;
+    /**
+     * The preference file name that contains the "client_secrets" for the posts this device has
+     * created.
+     */
     public static final String CLIENT_SECRETS_FILE_NAME = "ClientSecrets";
+    /**
+     * The date format used by both the client and the server.
+     */
     public static final DateFormat STANDARD_DATE_FORMAT
             = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
@@ -41,17 +51,25 @@ public final class G {
         name = context.getString(R.string.app_name);
         serverUrl = context.getString(R.string.server_url);
         secrets = context.getSharedPreferences("ClientSecrets", Context.MODE_PRIVATE);
-        splashed = false;
     }
 
     /**
-     * Initializes the singleton App object
+     * Initializes the singleton object
      *
      * @param context of application
      */
     public static void init(Context context) {
         if (app == null)
             app = new G(context);
+    }
+
+    /**
+     * Logs an info message.
+     *
+     * @param msg to log
+     */
+    public static void i(Object msg) {
+        Log.i(app.name, msg.toString());
     }
 
     /**
@@ -114,8 +132,7 @@ public final class G {
      */
     public static Date parseDateString(String str) throws ParseException {
         // e.g. "2015-12-16T19:11:46.202321Z"
-        // time and date separated by "T" char
-        String[] dateTime = str.split("T");
+        String[] dateTime = str.split("T"); // time and date separated by "T" char
         String date = dateTime[0];
         // we don't really care about the millis, cut off time from the dot
         String time = dateTime[1].substring(0, dateTime[1].indexOf('.'));

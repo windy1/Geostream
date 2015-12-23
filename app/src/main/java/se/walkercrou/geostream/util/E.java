@@ -108,6 +108,6 @@ public final class E {
     }
 
     private static AlertDialog.Builder builder(Context c, String msg) {
-        return new AlertDialog.Builder(c).setTitle(R.string.error_title).setMessage(msg);
+        return new AlertDialog.Builder(c).setTitle(R.string.title_error).setMessage(msg);
     }
 }

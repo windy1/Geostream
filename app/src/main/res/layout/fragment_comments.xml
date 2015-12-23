@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Tab within activity_post_detail.xml that displays comments -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:orientation="vertical"
         android:layout_width="match_parent"
@@ -6,6 +7,7 @@
         android:descendantFocusability="beforeDescendants"
         android:focusableInTouchMode="true">
 
+    <!-- Refreshable list view to hold comments -->
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/swipe_container"
         android:layout_above="@+id/reply_box"
@@ -19,7 +21,7 @@
             android:layout_centerHorizontal="true"/>
     </android.support.v4.widget.SwipeRefreshLayout>
 
-
+    <!-- Reply box -->
     <LinearLayout
         android:id="@+id/reply_box"
         android:layout_alignParentBottom="true"
@@ -42,7 +44,7 @@
             android:layout_height="wrap_content"
             android:background="@color/primary"
             android:src="@drawable/ic_action_send_now"
-            android:contentDescription="@string/send"/>
+            android:contentDescription="@string/description_send"/>
     </LinearLayout>
 
 </RelativeLayout>

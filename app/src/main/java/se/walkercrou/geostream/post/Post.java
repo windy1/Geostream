@@ -67,12 +67,10 @@ public class Post extends Resource implements Parcelable {
      * server.
      */
     public static final String BASE_FILE_NAME = "media_file";
-
     /**
      * File extension used when the Post's media is an image.
      */
     public static final String IMAGE_FILE_EXTENSION = "bmp";
-
     /**
      * File extension used when the Post's media is a video.
      */
