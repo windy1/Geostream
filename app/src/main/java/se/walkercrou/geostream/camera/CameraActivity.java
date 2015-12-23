@@ -1,6 +1,7 @@
 package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -16,7 +17,6 @@ import com.melnykov.fab.FloatingActionButton;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.post.Post;
@@ -53,6 +53,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     // ui stuff
     private FrameLayout previewView;
     private ProgressBar recordingProgress;
+    private ProgressDialog sendPostProgress;
     private int recordingProgressStatus = 0;
     private final Handler handler = new Handler(); // used for posting ui updates for progress bar
     private View cancelBtn;
@@ -153,31 +154,39 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         if (!G.isConnectedToNetwork(this))
             E.connection(this, (dialog, which) -> sendPost(null)).show();
         else {
-            // construct MediaData object
-            MediaData data;
-            if (outputFile != null && outputFile.exists())
-                data = new MediaData(Post.fileName(true), outputFile);
-            else
-                data = new MediaData(Post.fileName(false), imageData);
-
-            // try to create post
-            Post post;
-            try {
-                post = Post.create(this, locationManager.getLastLocation(), data,
-                        (error) -> E.postSend(this).show());
-            } catch (IOException e) {
-                E.postSend(this).show();
-                e.printStackTrace();
-                return;
-            }
-
-            // open activity if created
-            if (post != null)
-                post.startActivity(this);
+            // start progress dialog
+            sendPostProgress = ProgressDialog.show(this, getString(R.string.title_wait),
+                    getString(R.string.prompt_creating_post), true);
+            new Thread(this::sendPost).start();
         }
     }
 
     // ---------------------------
+
+    private void sendPost() {
+        // construct MediaData object
+        MediaData data;
+        if (outputFile != null && outputFile.exists())
+            data = new MediaData(Post.fileName(true), outputFile);
+        else
+            data = new MediaData(Post.fileName(false), imageData);
+
+        // try to create post
+        Post post;
+        try {
+            post = Post.create(this, locationManager.getLastLocation(), data,
+                    (error) -> E.postSend(this).show());
+        } catch (IOException e) {
+            E.postSend(this).show();
+            e.printStackTrace();
+            return;
+        }
+
+        if (post != null)
+            post.startActivity(this);
+
+        sendPostProgress.dismiss();
+    }
 
     private void showPreviewButtons() {
         // hide the cancel and send buttons and show the record button
@@ -190,6 +199,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private void showPlaybackButtons() {
         // hide record button and show cancel and send buttons
         G.i("Displaying playback buttons.");
+        recordBtn.setPressed(false);
         recordBtn.hide();
         sendBtn.show();
         cancelBtn.setVisibility(View.VISIBLE);
@@ -221,6 +231,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     }
 
     private boolean startRecording(View view) {
+        G.d("startRecording(View)");
         recording = true;
         new Thread(this::startProgressBar).start();
 
@@ -278,6 +289,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private void startProgressBar() {
         // called when the record button is long pressed and stops when the button is released or
         // the maximum video length is reached
+        G.d("start recordingAnimThread");
         while (recordingProgressStatus < 100 && recording) {
             // pause
             try {
@@ -292,5 +304,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
         // set back to zero
         recordingProgress.setProgress(recordingProgressStatus = 0);
+        G.d("end recordingAnimThread");
     }
 }

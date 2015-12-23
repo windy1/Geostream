@@ -1,18 +1,54 @@
 package se.walkercrou.geostream.net.response;
 
-import android.graphics.Bitmap;
+import android.content.Context;
 import android.graphics.BitmapFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 
-public class MediaResponse extends Response<Bitmap> {
-    private final Bitmap bmp;
+import se.walkercrou.geostream.post.Post;
 
-    public MediaResponse(InputStream in, int statusCode, String statusMessage) {
+public class MediaResponse extends Response<Object> {
+    private final Object media;
+
+    public MediaResponse(Context c, boolean video, InputStream in, int statusCode,
+                         String statusMessage) {
         super(in, statusCode, statusMessage);
-        bmp = BitmapFactory.decodeStream(in);
+
+        if (video) {
+            FileOutputStream out = null;
+            try {
+                // create file for video
+                File file = new File(c.getExternalCacheDir(), Post.fileName(true));
+                if (!file.exists())
+                    file.createNewFile();
+
+                // write input stream to file
+                out = new FileOutputStream(file);
+                byte[] buffer = new byte[4 * 1024];
+                int n;
+                while ((n = in.read(buffer)) != -1)
+                    out.write(buffer, 0, n);
+
+                media = file;
+            } catch (IOException e) {
+                throw new RuntimeException("error while downloading media video : ", e);
+            } finally {
+                if (out != null)
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+            }
+        } else
+            // not a video, decode bitmap
+            media = BitmapFactory.decodeStream(in);
+
+        // close input stream
         try {
             in.close();
         } catch (IOException e) {
@@ -20,12 +56,12 @@ public class MediaResponse extends Response<Bitmap> {
         }
     }
 
-    public MediaResponse(HttpURLConnection conn) throws IOException {
-        this(conn.getInputStream(), conn.getResponseCode(), conn.getResponseMessage());
+    public MediaResponse(Context c, boolean video, HttpURLConnection conn) throws IOException {
+        this(c, video, conn.getInputStream(), conn.getResponseCode(), conn.getResponseMessage());
     }
 
     @Override
-    public Bitmap get() {
-        return bmp;
+    public Object get() {
+        return media;
     }
 }

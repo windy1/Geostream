@@ -21,7 +21,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -31,12 +30,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
@@ -52,7 +51,7 @@ import static android.app.ActionBar.*;
 import static android.support.v4.view.ViewPager.*;
 
 /**
- * Represents an activity that displays a post's details.
+ * Represents an activity that displays a Post's details.
  */
 @SuppressWarnings("deprecation")
 public class PostDetailActivity extends FragmentActivity implements TabListener,
@@ -65,12 +64,11 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
     private Post post;
     private String clientSecret;
     private ViewPager viewPager;
-    private Bitmap media;
+    private Object media;
 
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_post_detail);
 
         // get the passed post object
@@ -180,7 +178,7 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
      * @return display string
      */
     public static String getTimeDisplay(Date date) {
-        Date now = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime();
+        Date now = Calendar.getInstance(G.STANDARD_TIME_ZONE).getTime();
         long diff = now.getTime() - date.getTime();
 
         // display "<1m" if in the seconds
@@ -217,26 +215,39 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
     private void downloadMedia() {
         String url = post.getMediaUrl();
         G.i("Downloading Post media from: " + url);
+
+        // get response from server
         MediaResponse response;
         try {
-            response = new MediaRequest(url).sendInBackground(this);
+            response = new MediaRequest(this, url).sendInBackground(this);
         } catch (IOException e) {
             E.connection(this, (d, w) -> downloadMedia());
             return;
         }
 
+        // check response
         if (response == null)
             throw new RuntimeException("Could not download post media");
         else if (response.isError())
             throw new RuntimeException("Could not download post media: "
                     + response.getStatusCode());
 
-
-        // rotate bitmap
-        Bitmap bmp = response.get();
-        Matrix matrix = new Matrix();
-        matrix.postRotate(90);
-        media = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+        // get and check result
+        Object media = response.get();
+        if (media instanceof File) {
+            // received a video
+            G.d("received video");
+            this.media = response.get().toString();
+        } else {
+            // received an image
+            G.d("received image");
+            Bitmap bmp = (Bitmap) response.get();
+            Matrix matrix = new Matrix();
+            matrix.postRotate(90);
+            this.media = Bitmap.createBitmap(
+                    bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true
+            );
+        }
     }
 
     /**
@@ -255,7 +266,11 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
                 case 0:
                     MediaFragment frag = new MediaFragment();
                     Bundle args = new Bundle();
-                    args.putParcelable(MediaFragment.ARG_MEDIA, media);
+                    G.d("media = " + media);
+                    if (media instanceof String)
+                        args.putString(MediaFragment.ARG_VIDEO_FILE, media.toString());
+                    else
+                        args.putParcelable(MediaFragment.ARG_IMAGE, (Bitmap) media);
                     args.putParcelable(MediaFragment.ARG_POST, post);
                     frag.setArguments(args);
                     return frag;
@@ -280,7 +295,8 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
      * Represents the tab that shows the media of the post.
      */
     public static class MediaFragment extends Fragment {
-        public static final String ARG_MEDIA = "media";
+        public static final String ARG_IMAGE = "image";
+        public static final String ARG_VIDEO_FILE = "video_file";
         public static final String ARG_POST = "post";
 
         @Override
@@ -288,11 +304,20 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
             View view = inflater.inflate(R.layout.fragment_media, container, false);
             Bundle args = getArguments();
 
-            // set the image
+            // initialize media
+            Bitmap bmp = args.getParcelable(ARG_IMAGE);
+            G.d("bmp = " + bmp);
             FrameLayout fl = (FrameLayout) view.findViewById(R.id.media);
-            ImageView image = new ImageView(getContext());
-            image.setImageBitmap(args.getParcelable(ARG_MEDIA));
-            fl.addView(image);
+
+            if (bmp == null) {
+                String videoFilePath = args.getString(ARG_VIDEO_FILE);
+                VideoPreview video = new VideoPreview(getContext(), videoFilePath);
+                fl.addView(video);
+            } else {
+                ImageView image = new ImageView(getContext());
+                image.setImageBitmap(bmp);
+                fl.addView(image);
+            }
 
             // set the time
             Post post = args.getParcelable(ARG_POST);

@@ -1,11 +1,12 @@
 package se.walkercrou.geostream;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
-import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
@@ -46,12 +47,18 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
      */
     public static final int MIN_MAP_ZOOM = 17;
 
+    // map stuff
     private GoogleMap map;
-    private FloatingActionButton cameraBtn, refreshBtn;
     // used for getting initial location, after that the map is used
     private LocationManager locationManager;
-    private View splashScreen; // displayed when application is launched
     private final Map<Marker, Post> posts = new HashMap<>(); // map the map markers to posts
+
+    // ui stuff
+    private FloatingActionButton cameraBtn, refreshBtn;
+    private View splashScreen; // displayed when application is launched
+    private final Handler handler = new Handler();
+    private ProgressDialog refreshProgress;
+
 
     @Override
     protected void onCreate(Bundle b) {
@@ -108,6 +115,12 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
      * Refreshes the posts on the map to reflect any new posts or deleted posts on the server.
      */
     public void refresh() {
+        refreshProgress = ProgressDialog.show(this, getString(R.string.title_wait),
+                getString(R.string.prompt_get_resource), true);
+        new Thread(this::doRefresh).start();
+    }
+
+    private void doRefresh() {
         List<Post> newPosts;
         try {
             newPosts = getPosts();
@@ -133,7 +146,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             }
 
             if (!found) {
-                marker.remove();
+                handler.post(marker::remove); // post to main thread
                 iter.remove();
                 removed++;
             }
@@ -148,10 +161,12 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
                     found = true;
             }
             if (!found) {
-                placePost(newPost);
+                handler.post(() -> placePost(newPost)); // post to main thread
                 added++;
             }
         }
+
+        refreshProgress.dismiss();
 
         G.i("Map refreshed.");
         G.i("  Removed: " + removed);

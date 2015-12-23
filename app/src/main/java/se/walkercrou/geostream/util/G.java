@@ -42,9 +42,13 @@ public final class G {
      */
     public static final DateFormat STANDARD_DATE_FORMAT
             = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+    /**
+     * The time zone used by both the client and the server.
+     */
+    public static final TimeZone STANDARD_TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     static {
-        STANDARD_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+        STANDARD_DATE_FORMAT.setTimeZone(STANDARD_TIME_ZONE);
     }
 
     private G(Context context) {
