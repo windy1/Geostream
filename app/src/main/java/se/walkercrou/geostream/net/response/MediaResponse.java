@@ -11,6 +11,9 @@ import java.net.HttpURLConnection;
 
 import se.walkercrou.geostream.post.Post;
 
+/**
+ * Represents a response from the server that contains media relating to a resource.
+ */
 public class MediaResponse extends Response<Object> {
     private final Object media;
 

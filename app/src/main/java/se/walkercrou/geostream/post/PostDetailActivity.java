@@ -103,6 +103,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_discard:
+                // show confirmation dialog
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.title_confirm)
                         .setMessage(R.string.prompt_confirm_delete)
@@ -118,9 +119,11 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                         .show();
                 return true;
             case R.id.action_comments:
+                // switch to comments
                 viewPager.setCurrentItem(1);
                 return true;
             case android.R.id.home:
+                // if at comments, go back to media, otherwise go back to map
                 if (viewPager.getCurrentItem() == 1)
                     viewPager.setCurrentItem(0);
                 else
@@ -137,7 +140,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
     @Override
     public void onPageSelected(int position) {
-        G.d("position = " + position);
+        // don't show the comments button when in comments
         if (position == 0)
             commentsAction.setVisible(true);
         else
@@ -296,12 +299,14 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             FrameLayout fl = (FrameLayout) view.findViewById(R.id.media);
 
             if (bmp == null) {
+                // not an image, check for video
                 String videoFilePath = args.getString(ARG_VIDEO_FILE);
                 if (videoFilePath == null)
                     throw new RuntimeException("no image or video passed to MediaFragment");
                 VideoPreview video = new VideoPreview(getContext(), videoFilePath);
                 fl.addView(video);
             } else {
+                // image found
                 ImageView image = new ImageView(getContext());
                 image.setImageBitmap(bmp);
                 fl.addView(image);
