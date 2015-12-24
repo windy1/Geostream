@@ -8,8 +8,6 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
-import se.walkercrou.geostream.util.G;
-
 @SuppressWarnings("deprecation")
 public class VideoPreview extends SurfaceView implements SurfaceHolder.Callback {
     private final MediaPlayer player = new MediaPlayer();
@@ -22,6 +20,10 @@ public class VideoPreview extends SurfaceView implements SurfaceHolder.Callback 
         SurfaceHolder holder = getHolder();
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+    }
+
+    public MediaPlayer getMediaPlayer() {
+        return player;
     }
 
     @Override

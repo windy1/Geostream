@@ -2,7 +2,6 @@ package se.walkercrou.geostream.post;
 
 import android.app.ActionBar;
 import android.app.AlertDialog;
-import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -13,6 +12,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.NavUtils;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
@@ -47,15 +47,11 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 
-import static android.app.ActionBar.*;
-import static android.support.v4.view.ViewPager.*;
-
 /**
  * Represents an activity that displays a Post's details.
  */
 @SuppressWarnings("deprecation")
-public class PostDetailActivity extends FragmentActivity implements TabListener,
-        OnPageChangeListener {
+public class PostDetailActivity extends FragmentActivity implements ViewPager.OnPageChangeListener {
     /**
      * Extra that contains the Post that is expected in this activity.
      */
@@ -63,8 +59,9 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
 
     private Post post;
     private String clientSecret;
-    private ViewPager viewPager;
     private Object media;
+    private ViewPager viewPager;
+    private MenuItem commentsAction;
 
     @Override
     public void onCreate(Bundle b) {
@@ -86,7 +83,7 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         PostDetailAdapter adapter = new PostDetailAdapter(getSupportFragmentManager());
         viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(adapter);
-        viewPager.setOnPageChangeListener(this);
+        viewPager.addOnPageChangeListener(this);
 
         setupActionBar();
     }
@@ -96,41 +93,10 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
         // show "discard" button if we have the client secret for this post
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.post_detail_activity_actions, menu);
-        if (clientSecret != null) {
-            G.d(clientSecret);
-            menu.getItem(0).setVisible(true);
-        }
+        commentsAction = menu.getItem(1);
+        if (clientSecret == null)
+            menu.getItem(0).setVisible(false);
         return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public void onTabSelected(Tab tab, FragmentTransaction ft) {
-        // update view pager when tab is selected
-        viewPager.setCurrentItem(tab.getPosition());
-    }
-
-    @Override
-    public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-    }
-
-    @Override
-    public void onTabReselected(Tab tab, FragmentTransaction ft) {
-    }
-
-    @Override
-    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-    }
-
-    @Override
-    public void onPageSelected(int position) {
-        // update tabs when view pager is used
-        ActionBar ab = getActionBar();
-        if (ab != null)
-            ab.setSelectedNavigationItem(position);
-    }
-
-    @Override
-    public void onPageScrollStateChanged(int state) {
     }
 
     @Override
@@ -151,9 +117,35 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
                         .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
                         .show();
                 return true;
+            case R.id.action_comments:
+                viewPager.setCurrentItem(1);
+                return true;
+            case android.R.id.home:
+                if (viewPager.getCurrentItem() == 1)
+                    viewPager.setCurrentItem(0);
+                else
+                    NavUtils.navigateUpFromSameTask(this);
+                return true;
             default:
                 return false;
         }
+    }
+
+    @Override
+    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+    }
+
+    @Override
+    public void onPageSelected(int position) {
+        G.d("position = " + position);
+        if (position == 0)
+            commentsAction.setVisible(true);
+        else
+            commentsAction.setVisible(false);
+    }
+
+    @Override
+    public void onPageScrollStateChanged(int state) {
     }
 
     /**
@@ -202,14 +194,8 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
 
     private void setupActionBar() {
         ActionBar bar = getActionBar();
-        if (bar == null)
-            return;
-
-        // enable up navigation
-        bar.setDisplayHomeAsUpEnabled(true);
-        bar.setNavigationMode(NAVIGATION_MODE_TABS);
-        bar.addTab(bar.newTab().setText(R.string.title_activity_post).setTabListener(this));
-        bar.addTab(bar.newTab().setText(R.string.title_comments).setTabListener(this));
+        if (bar != null)
+            bar.setDisplayHomeAsUpEnabled(true);
     }
 
     private void downloadMedia() {
@@ -311,6 +297,8 @@ public class PostDetailActivity extends FragmentActivity implements TabListener,
 
             if (bmp == null) {
                 String videoFilePath = args.getString(ARG_VIDEO_FILE);
+                if (videoFilePath == null)
+                    throw new RuntimeException("no image or video passed to MediaFragment");
                 VideoPreview video = new VideoPreview(getContext(), videoFilePath);
                 fl.addView(video);
             } else {

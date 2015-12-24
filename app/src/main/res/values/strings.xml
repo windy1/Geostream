@@ -56,4 +56,5 @@
     </string>
     <string name="prompt_creating_post">…your post is now being created.</string>
     <string name="prompt_get_resource">...while we get that for you.</string>
+    <string name="action_comments">Comments</string>
 </resources>
