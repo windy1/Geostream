@@ -123,12 +123,15 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                 // show confirmation dialog for deletion
                 showDeleteDialog();
                 return true;
-            case R.id.action_comments:
-                // switch to comments
-                viewPager.setCurrentItem(PAGE_COMMENTS);
+            case R.id.action_hide:
+                showHideDialog();
                 return true;
             case R.id.action_flag:
                 showReportDialog();
+                return true;
+            case R.id.action_comments:
+                // switch to comments
+                viewPager.setCurrentItem(PAGE_COMMENTS);
                 return true;
             case android.R.id.home:
                 // if at comments, go back to media, otherwise go back to map
@@ -154,6 +157,14 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
     @Override
     public void onPageScrollStateChanged(int state) {
+    }
+
+    /**
+     * Hides this post and starts the {@link MapActivity}.
+     */
+    public void hidePost() {
+        post.setHidden(true);
+        startActivity(new Intent(this, MapActivity.class));
     }
 
     /**
@@ -209,6 +220,18 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         startActivity(new Intent(this, MapActivity.class));
     }
 
+    private void showHideDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_confirm)
+                .setMessage(R.string.prompt_confirm_hide)
+                .setPositiveButton(R.string.action_hide, (dialog, which) -> {
+                    dialog.dismiss();
+                    hidePost();
+                })
+                .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
     private void showDeleteDialog() {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.title_confirm)
@@ -217,8 +240,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                     dialog.dismiss();
                     deletePost();
                 })
-                .setNegativeButton(R.string.action_cancel, (dialog, which) ->
-                        dialog.dismiss())
+                .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
@@ -278,13 +300,17 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
          */
         public static final int ACTION_DISCARD = 0;
         /**
+         * ActionBar button to hide the Post.
+         */
+        public static final int ACTION_HIDE = 1;
+        /**
          * ActionBar button to report the Post.
          */
-        public static final int ACTION_REPORT = 1;
+        public static final int ACTION_REPORT = 2;
         /**
          * ActionBar button to open the comments.
          */
-        public static final int ACTION_COMMENTS = 2;
+        public static final int ACTION_COMMENTS = 3;
         /**
          * The delay (in millis) to wait before hiding the {@link ActionBar}.
          */

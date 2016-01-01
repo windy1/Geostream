@@ -1,6 +1,7 @@
 package se.walkercrou.geostream.camera;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;

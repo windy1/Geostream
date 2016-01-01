@@ -76,4 +76,6 @@
     <string name="error_location_required">%s requires location services in order to function. App will exit now.</string>
     <string name="error_lost_connection">Connection to location services lost.</string>
     <string name="prompt_location_restored">Connection to location services restored!</string>
+    <string name="action_hide">Hide</string>
+    <string name="prompt_confirm_hide">Are you sure you want to hide this? This cannot be undone.</string>
 </resources>

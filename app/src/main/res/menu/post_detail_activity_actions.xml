@@ -6,6 +6,11 @@
           android:title="@string/action_delete"
           android:showAsAction="ifRoom"
           app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_hide"
+          android:icon="@drawable/ic_hide_white_24dp"
+          android:title="@string/action_hide"
+          android:showAsAction="ifRoom"
+          app:showAsAction="ifRoom" />
     <item android:id="@+id/action_flag"
           android:icon="@drawable/ic_flag_white_24dp"
           android:title="@string/action_report"

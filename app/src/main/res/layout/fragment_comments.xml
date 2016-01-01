@@ -44,7 +44,7 @@
             android:id="@+id/btn_send"
             android:layout_height="wrap_content"
             android:background="@color/primary"
-            android:src="@drawable/ic_send_white_36dp"
+            android:src="@drawable/ic_send_white_24dp"
             android:contentDescription="@string/description_send"/>
     </LinearLayout>
 
