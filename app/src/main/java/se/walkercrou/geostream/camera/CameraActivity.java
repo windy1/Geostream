@@ -7,12 +7,16 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.melnykov.fab.FloatingActionButton;
 
 import java.io.File;
@@ -24,12 +28,13 @@ import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.post.PostDetailActivity;
 import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
-import se.walkercrou.geostream.util.LocationManager;
+import se.walkercrou.geostream.util.LocationApi;
 
 import static android.hardware.Camera.PictureCallback;
 import static android.hardware.Camera.PreviewCallback;
 import static android.hardware.Camera.ShutterCallback;
 import static android.hardware.Camera.open;
+import static com.google.android.gms.common.api.GoogleApiClient.*;
 import static se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaData;
 
 /**
@@ -39,7 +44,7 @@ import static se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaDat
  */
 @SuppressWarnings("deprecation")
 public class CameraActivity extends Activity implements PictureCallback, ShutterCallback,
-        PreviewCallback {
+        PreviewCallback, ConnectionCallbacks, OnConnectionFailedListener {
     private static final long PROGRESS_PAUSE_TIME = 100; // 10 seconds, used for recording anim
 
     // camera stuff
@@ -60,10 +65,11 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private FloatingActionButton recordBtn, sendBtn;
 
     // location stuff
-    private LocationManager locationManager;
+    private LocationApi locationApi;
+    private boolean lostLocation;
 
     @Override
-    public void onCreate(Bundle b) {
+    protected void onCreate(Bundle b) {
         super.onCreate(b);
 
         // hide action bar
@@ -75,39 +81,61 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         sendBtn = (FloatingActionButton) findViewById(R.id.fab_send);
         sendBtn.hide(false); // hide the send button without an animation at start
 
-        // add listeners to record button
-        recordBtn = (FloatingActionButton) findViewById(R.id.fab_record);
-        // start recording video when the user presses and holds the button
-        recordBtn.setOnLongClickListener(this::startRecording);
-        // take a picture when the user clicks the button
-        recordBtn.setOnClickListener((view) -> cam.takePicture(this, this, this));
-        // stop recording if the user lets go of the button (and we are recording)
-        // if action == ACTION_UP && recording == true: stop recording
-        recordBtn.setOnTouchListener((view, event) -> event.getAction() == MotionEvent.ACTION_UP
-                && recording && stopRecording());
+        setupRecordButton();
 
         // setup progress bar for recording video
         recordingProgress = (ProgressBar) findViewById(R.id.progress_bar);
 
         previewView = (FrameLayout) findViewById(R.id.camera_preview);
-
-        // connect to location services
-        locationManager = new LocationManager();
-        locationManager.connect(this);
     }
 
     @Override
-    public void onResume() {
+    protected void onStart() {
+        locationApi = new LocationApi(this);
+        locationApi.connect(this, this);
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        locationApi.disconnect();
+        super.onStop();
+    }
+
+    @Override
+    protected void onResume() {
         super.onResume();
         // resume the camera
         setupCamera();
     }
 
     @Override
-    public void onPause() {
+    protected void onPause() {
         super.onPause();
         // pause the camera
         preview.stopPreviewAndFreeCamera();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        G.i("Connected to location services.");
+        if (lostLocation) {
+            Toast.makeText(this, R.string.prompt_location_restored, Toast.LENGTH_LONG).show();
+            lostLocation = false;
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        G.i("Connection to location services lost.");
+        Toast.makeText(this, R.string.error_lost_connection, Toast.LENGTH_LONG).show();
+        lostLocation = true;
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        G.i("Connection to location services failed.");
+        E.location(this, (d, w) -> locationApi.connect(this, this)).show();
     }
 
     @Override
@@ -138,6 +166,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
             outputFile = null;
             setupCamera(); // reset camera
         } else {
+            // image data exists
             cam.startPreview();
             imageData = null;
         }
@@ -161,6 +190,19 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     // ---------------------------
 
+    private void setupRecordButton() {
+        // add listeners to record button
+        recordBtn = (FloatingActionButton) findViewById(R.id.fab_record);
+        // start recording video when the user presses and holds the button
+        recordBtn.setOnLongClickListener(this::startRecording);
+        // take a picture when the user clicks the button
+        recordBtn.setOnClickListener((view) -> cam.takePicture(this, this, this));
+        // stop recording if the user lets go of the button (and we are recording)
+        // if action == ACTION_UP && recording == true: stop recording
+        recordBtn.setOnTouchListener((view, event) -> event.getAction() == MotionEvent.ACTION_UP
+                && recording && stopRecording());
+    }
+
     private void sendPost() {
         // construct MediaData object
         MediaData data;
@@ -172,7 +214,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // try to create post
         Post post;
         try {
-            post = Post.create(this, locationManager.getLastLocation(), data,
+            post = Post.create(this, locationApi.getLastLocation(), data,
                     (error) -> E.postSend(this).show());
         } catch (IOException e) {
             E.postSend(this).show();
@@ -189,7 +231,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     private void showPreviewButtons() {
         // hide the cancel and send buttons and show the record button
-        G.i("Displaying preview buttons.");
         sendBtn.hide();
         recordBtn.show();
         cancelBtn.setVisibility(View.GONE);
@@ -197,7 +238,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     private void showPlaybackButtons() {
         // hide record button and show cancel and send buttons
-        G.i("Displaying playback buttons.");
         recordBtn.setPressed(false);
         recordBtn.hide();
         sendBtn.show();
@@ -287,7 +327,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private void startProgressBar() {
         // called when the record button is long pressed and stops when the button is released or
         // the maximum video length is reached
-        G.d("start recordingAnimThread");
         while (recordingProgressStatus < 100 && recording) {
             // pause
             try {

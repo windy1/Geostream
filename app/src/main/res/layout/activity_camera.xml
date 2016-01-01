@@ -41,7 +41,7 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_action_send_now"
+        android:src="@drawable/ic_send_white_36dp"
         fab:fab_shadow="false"
         fab:fab_colorNormal="@color/primary"
         fab:fab_colorPressed="@color/primary_dark"
@@ -57,7 +57,7 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_action_cancel"
+        android:src="@drawable/ic_cancel_white_48dp"
         android:background="@android:color/transparent"
         android:contentDescription="@string/action_cancel" />
 

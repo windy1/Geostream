@@ -67,29 +67,17 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
      */
     public static final int PAGE_COMMENTS = 1;
     /**
-     * ActionBar button to delete the Post.
+     * Class that handles actions related to the {@link ActionBar}.
      */
-    public static final int ACTION_DISCARD = 0;
-    /**
-     * ActionBar button to report the Post.
-     */
-    public static final int ACTION_REPORT = 1;
-    /**
-     * ActionBar button to open the comments.
-     */
-    public static final int ACTION_COMMENTS = 2;
-    /**
-     * Handles video playback. Static so the {@link MediaFragment} can access it. This is okay
-     * because only one PostDetailActivity will ever be opened at a time anyways.
-     */
+    private static ActionBarHandler actionBarHandler;
     private static VideoHandler videoHandler;
 
     private Post post;
     private String clientSecret; // signifies ownership of the post
     private Object media; // either a Bitmap or String file path to video file
     private ViewPager viewPager;
-    private MenuItem commentsAction;
     private ProgressDialog progressDialog;
+    private final Handler handler = new Handler();
 
     @Override
     public void onCreate(Bundle b) {
@@ -111,57 +99,36 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
         downloadMedia(); // sets 'media' to either a Bitmap or String file path
 
-        videoHandler = new VideoHandler(getActionBar()); // assign static video handler to this activity
+        actionBarHandler = new ActionBarHandler(getActionBar(), clientSecret);
+        videoHandler = new VideoHandler();
 
         // setup view paging between post and comments
         PostDetailPagerAdapter adapter = new PostDetailPagerAdapter(getSupportFragmentManager());
         viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(this);
-
-        // setup the action bar
-        ActionBar bar = getActionBar();
-        if (bar != null)
-            bar.setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.post_detail_activity_actions, menu);
-        commentsAction = menu.getItem(ACTION_COMMENTS); // save comments button for later
-        if (clientSecret == null)
-            // hide "discard" button if we don't have a client secret
-            menu.getItem(ACTION_DISCARD).setVisible(false);
+        actionBarHandler.onMenuInflate(menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_discard:
+            case R.id.action_delete:
                 // show confirmation dialog for deletion
-                new AlertDialog.Builder(this)
-                        .setTitle(R.string.title_confirm)
-                        .setMessage(R.string.prompt_confirm_delete)
-                        .setPositiveButton(R.string.action_delete, (dialog, which) -> {
-                            dialog.dismiss();
-                            deletePost();
-                        })
-                        .setNegativeButton(R.string.action_cancel, (dialog, which) ->
-                                dialog.dismiss())
-                        .show();
+                showDeleteDialog();
                 return true;
             case R.id.action_comments:
                 // switch to comments
                 viewPager.setCurrentItem(PAGE_COMMENTS);
                 return true;
-            case R.id.action_report:
-                new AlertDialog.Builder(this)
-                        .setTitle(R.string.title_report)
-                        .setItems(R.array.report_reasons, (dialog, which) -> {
-                            reportPost(Flag.Reason.values()[which]);
-                        })
-                        .show();
+            case R.id.action_flag:
+                showReportDialog();
                 return true;
             case android.R.id.home:
                 // if at comments, go back to media, otherwise go back to map
@@ -181,14 +148,8 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
     @Override
     public void onPageSelected(int position) {
+        actionBarHandler.onPageSelected(position);
         videoHandler.onPageSelected(position);
-        if (position == PAGE_MEDIA) {
-            // switching to media page
-            commentsAction.setVisible(true); // show comments button
-        } else {
-            // switching to comments page
-            commentsAction.setVisible(false); // hide comments button
-        }
     }
 
     @Override
@@ -219,7 +180,8 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             progressDialog.dismiss();
 
         post.setHidden(true);
-        Toast.makeText(this, R.string.prompt_post_report, Toast.LENGTH_LONG).show();
+        handler.post(() -> Toast.makeText(this, R.string.prompt_post_report, Toast.LENGTH_LONG)
+                .show());
         startActivity(new Intent(this, MapActivity.class));
     }
 
@@ -233,7 +195,6 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     private void _deletePost() {
-        G.d("client secret = " + clientSecret);
         try {
             post.delete(this, clientSecret, (error) -> E.internal(this, error));
         } catch (IOException e) {
@@ -246,6 +207,28 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             progressDialog.dismiss();
 
         startActivity(new Intent(this, MapActivity.class));
+    }
+
+    private void showDeleteDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_confirm)
+                .setMessage(R.string.prompt_confirm_delete)
+                .setPositiveButton(R.string.action_delete, (dialog, which) -> {
+                    dialog.dismiss();
+                    deletePost();
+                })
+                .setNegativeButton(R.string.action_cancel, (dialog, which) ->
+                        dialog.dismiss())
+                .show();
+    }
+
+    private void showReportDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_report)
+                .setItems(R.array.report_reasons, (dialog, which) -> {
+                    reportPost(Flag.Reason.values()[which]);
+                })
+                .show();
     }
 
     private void downloadMedia() {
@@ -274,11 +257,9 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         Object media = response.get();
         if (media instanceof File) {
             // received a video
-            G.d("received video");
             this.media = response.get().toString();
         } else {
             // received an image
-            G.d("received image");
             Bitmap bmp = (Bitmap) response.get();
             Matrix matrix = new Matrix();
             matrix.postRotate(90);
@@ -289,99 +270,150 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     /**
-     * Wrapper class for {@link MediaPlayer} to control playback from parent activity within the
-     * fragment. This is necessary because the Activity cannot access the {@link MediaFragment} from
-     * the parent activity.
+     * Wrapper class for handling the ActionBar.
      */
-    public static class VideoHandler {
-        private final ActionBar ab;
-        private MediaPlayer player;
-        private final Handler handler = new Handler();
-        private final Map<DelayedHideTask, Boolean> hideTasks = new HashMap<>();
+    public static class ActionBarHandler {
+        /**
+         * ActionBar button to delete the Post.
+         */
+        public static final int ACTION_DISCARD = 0;
+        /**
+         * ActionBar button to report the Post.
+         */
+        public static final int ACTION_REPORT = 1;
+        /**
+         * ActionBar button to open the comments.
+         */
+        public static final int ACTION_COMMENTS = 2;
+        /**
+         * The delay (in millis) to wait before hiding the {@link ActionBar}.
+         */
+        public static final int HIDE_DELAY = 3000;
 
-        public VideoHandler(ActionBar ab) {
+        private final ActionBar ab;
+        private final String clientSecret;
+        private final Map<DelayedHideTask, Boolean> hideTasks = new HashMap<>();
+        private final Handler handler = new Handler();
+        private MenuItem commentsItem;
+
+        public ActionBarHandler(ActionBar ab, String clientSecret) {
             this.ab = ab;
+            this.clientSecret = clientSecret;
+            ab.setDisplayHomeAsUpEnabled(true);
         }
 
         /**
-         * Called when the {@link MediaPlayer} is first initialized.
+         * Called when the media is added to the {@link MediaFragment}.
          */
-        public void onAddView() {
+        public void onMediaLoad() {
             hideActionBar();
         }
 
         /**
-         * Called when the page in the ViewPager is changed.
+         * Called when the media is clicked.
+         */
+        public void onMediaClick() {
+            showActionBar();
+            hideActionBar();
+        }
+
+        /**
+         * Called when the action menu on the {@link ActionBar} is inflated.
+         *
+         * @param menu that was inflated
+         */
+        public void onMenuInflate(Menu menu) {
+            commentsItem = menu.getItem(ACTION_COMMENTS);
+            if (clientSecret == null)
+                // hide "discard" button if we don't have a client secret
+                menu.getItem(ACTION_DISCARD).setVisible(false);
+        }
+
+        /**
+         * Called when {@link ViewPager} changes pages in the activity.
          *
          * @param position of page
          */
         public void onPageSelected(int position) {
-            if (player == null)
-                return;
-
-            if (position == 0) {
+            if (position == PAGE_MEDIA) {
                 // switched to media fragment
-                if (!player.isPlaying())
-                    player.start();
+                commentsItem.setVisible(true);
                 hideActionBar();
-            } else if (player.isPlaying()) {
-                // switched to comments fragment and playing
-                player.pause();
-                showActionBar();
-            }
-        }
-
-        /**
-         * Called when the video is clicked.
-         */
-        public void onVideoClick() {
-            if (player == null)
-                return;
-
-            if (player.isPlaying()) {
-                player.pause();
-                showActionBar();
             } else {
-                player.start();
-                hideActionBar();
+                commentsItem.setVisible(false);
+                showActionBar();
             }
         }
 
         private void hideActionBar() {
-            cancelHideTasks(); // cancel future hides
-            DelayedHideTask task = new DelayedHideTask();
-            hideTasks.put(task, false);
-            task.start();
+            cancelHideTasks(); // cancel pending hide tasks
+            DelayedHideTask hideTask = new DelayedHideTask();
+            hideTasks.put(hideTask, false);
+            hideTask.start();
         }
 
         private void showActionBar() {
-            cancelHideTasks(); // cancel future hides
+            cancelHideTasks();
             ab.show();
         }
 
         private void cancelHideTasks() {
-            for (DelayedHideTask task : hideTasks.keySet())
-                hideTasks.put(task, true);
+            for (DelayedHideTask hideTask : hideTasks.keySet())
+                hideTasks.put(hideTask, true);
         }
 
-        private class DelayedHideTask extends Thread {
+        /**
+         * Thread that does a delayed hide of the {@link ActionBar}.
+         */
+        public class DelayedHideTask extends Thread {
             @Override
             public void run() {
-                // wait 3 seconds
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(HIDE_DELAY);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
 
-                // hide action bar
                 boolean cancelled = hideTasks.get(this);
                 if (!cancelled)
                     handler.post(ab::hide);
 
-                // remove from map
                 hideTasks.remove(this);
             }
+        }
+    }
+
+    /**
+     * Wrapper class for handling video playback.
+     */
+    public static class VideoHandler {
+        private MediaPlayer mediaPlayer;
+
+        /**
+         * Called when the video is clicked. Pauses if playing and plays if paused.
+         */
+        public void onVideoClick() {
+            if (mediaPlayer != null) {
+                if (mediaPlayer.isPlaying())
+                    mediaPlayer.pause();
+                else
+                    mediaPlayer.start();
+            }
+        }
+
+        /**
+         * Called when the page is changed by the {@link ViewPager}. Starts the {@link MediaPlayer}
+         * if switched to the {@link MediaFragment} and pauses if switched to the
+         * {@link CommentsFragment}.
+         *
+         * @param position of page
+         */
+        public void onPageSelected(int position) {
+            if (position == PAGE_MEDIA) {
+                if (mediaPlayer != null && !mediaPlayer.isPlaying())
+                    mediaPlayer.start();
+            } else if (mediaPlayer != null && mediaPlayer.isPlaying())
+                mediaPlayer.pause();
         }
     }
 
@@ -460,7 +492,6 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
             // initialize media
             Bitmap bmp = args.getParcelable(ARG_IMAGE);
-            G.d("bmp = " + bmp);
             FrameLayout fl = (FrameLayout) view.findViewById(R.id.media);
             fl.setOnClickListener(this);
 
@@ -474,15 +505,15 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                 VideoPreview video = new VideoPreview(getContext(), videoFilePath);
                 fl.addView(video);
 
-                // set the player within the wrapper so the playback can be controlled from activity
-                videoHandler.player = video.player;
-                videoHandler.onAddView();
+                videoHandler.mediaPlayer = video.player;
             } else {
                 // image found, add to view
                 ImageView image = new ImageView(getContext());
                 image.setImageBitmap(bmp);
                 fl.addView(image);
             }
+
+            actionBarHandler.onMediaLoad();
 
             // set the time
             Post post = args.getParcelable(ARG_POST);
@@ -495,7 +526,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
         @Override
         public void onClick(View v) {
-            // called when the FrameLayout is clicked
+            actionBarHandler.onMediaClick();
             videoHandler.onVideoClick();
         }
     }

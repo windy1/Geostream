@@ -1,16 +1,21 @@
 package se.walkercrou.geostream;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -33,16 +38,20 @@ import se.walkercrou.geostream.post.Post;
 import se.walkercrou.geostream.post.PostDetailActivity;
 import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
-import se.walkercrou.geostream.util.LocationManager;
+import se.walkercrou.geostream.util.LocationApi;
+
+import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import static com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
+import static com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 
 /**
  * Main activity of application. Displays a map around your current location and displays nearby
  * posts. Provides navigation to {@link CameraActivity} and {@link PostDetailActivity}s.
- *
- * TODO: Replace OnMyLocationChangeListener with LocationManager entirely
  */
-public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerClickListener,
-        GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraChangeListener, OnMapReadyCallback {
+public class MapActivity extends FragmentActivity implements OnMarkerClickListener,
+        OnCameraChangeListener, OnMapReadyCallback, ConnectionCallbacks, OnConnectionFailedListener,
+        LocationListener {
     /**
      * The minimum map zoom enforced by this app. The reasoning behind this is to only make posts
      * that are in the user's vicinity available as a design choice.
@@ -51,8 +60,8 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     // map stuff
     private GoogleMap map;
-    // used for getting initial location, after that the map is used
-    private LocationManager locationManager;
+    private LocationApi locationApi;
+    private boolean lostLocation;
     private final Map<Marker, Post> posts = new HashMap<>(); // map the map markers to posts
 
     // ui stuff
@@ -81,10 +90,76 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
             splashScreen.setVisibility(View.VISIBLE);
             G.app.splashed = true;
         }
+    }
 
-        // get initial location
-        locationManager = new LocationManager();
-        locationManager.connect(this, this::onLocationEstablished);
+    @Override
+    protected void onStart() {
+        locationApi = new LocationApi(this);
+        locationApi.connect(this, this);
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        locationApi.disconnect();
+        super.onStop();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        G.i("Connected to location services.");
+
+        if (lostLocation) {
+            Toast.makeText(this, R.string.prompt_location_restored, Toast.LENGTH_LONG).show();
+            lostLocation = false;
+        }
+
+        setupMap();
+        splashScreen.setVisibility(View.GONE);
+        findViewById(R.id.fabs).setVisibility(View.VISIBLE); // make FAB container visible
+        refreshBtn.show();
+        cameraBtn.show();
+
+        locationApi.startLocationUpdates(this);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        G.i("Connection to location services lost.");
+        Toast.makeText(this, R.string.error_lost_connection, Toast.LENGTH_LONG).show();
+        lostLocation = true;
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        G.i("Connection to location services failed.");
+        E.location(this, (d, w) -> locationApi.connect(this, this)).show();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if (map.getCameraPosition().zoom == MIN_MAP_ZOOM)
+            centerMapOnLocation(location);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == 862) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                G.i("Device has been granted location permissions.");
+                locationApi.connect(this, this);
+            } else {
+                G.i("Device has been denied location permissions.");
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.title_error)
+                        .setMessage(R.string.error_location_required)
+                        .setPositiveButton(R.string.action_ok, (dialog, which) -> {
+                            MapActivity.this.finish();
+                        })
+                        .show();
+            }
+        }
     }
 
     @Override
@@ -92,11 +167,10 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         this.map = map;
 
         // get location
-        Location location = locationManager.getLastLocation();
+        Location location = locationApi.getLastLocation();
         if (location == null) {
             // could not get location
-            E.location(this, (dialog, which) ->
-                    locationManager.connect(this, this::onLocationEstablished)).show();
+            E.location(this, (dialog, which) -> onMapReady(map)).show();
             return;
         }
 
@@ -108,11 +182,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         ui.setMapToolbarEnabled(false);
         map.setOnCameraChangeListener(this); // listen for camera changes
         map.setOnMarkerClickListener(this); // redirect all marker clicks to this
-
-        // setup location updates
-        // TODO: Permission check
         map.setMyLocationEnabled(true);
-        map.setOnMyLocationChangeListener(this);
 
         centerMapOnLocation(location);
         refresh(); // place posts on map
@@ -132,17 +202,11 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     }
 
     @Override
-    public void onMyLocationChange(Location location) {
-        // keep map locked on position, don't relocate if zoomed in
-        if (location != null && map.getCameraPosition().zoom == MIN_MAP_ZOOM)
-            centerMapOnLocation(location);
-    }
-
-    @Override
     public void onCameraChange(CameraPosition cameraPosition) {
         // enforce the minimum zoom
-        if (cameraPosition.zoom < MIN_MAP_ZOOM && map.getMyLocation() != null)
-            centerMapOnLocation(map.getMyLocation());
+        Location location = locationApi.getLastLocation();
+        if (cameraPosition.zoom < MIN_MAP_ZOOM && location != null)
+            centerMapOnLocation(location);
     }
 
     /**
@@ -201,7 +265,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
                     found = true;
             }
 
-            if (!found) {
+            if (!found && !newPost.isHidden()) {
                 handler.post(() -> placePost(newPost)); // post to main thread
                 added++;
             }
@@ -220,7 +284,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
 
     public void refresh(View view) {
         // called when the refresh FAB is clicked
-        centerMapOnLocation(map.getMyLocation());
+        centerMapOnLocation(locationApi.getLastLocation());
         refresh();
     }
 
@@ -230,16 +294,6 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     }
 
     // -----------------------------
-
-    private void onLocationEstablished() {
-        // called when the devices location is established for the first time
-        G.i("Device location has been established.");
-        setupMap();
-        splashScreen.setVisibility(View.GONE);
-        findViewById(R.id.fabs).setVisibility(View.VISIBLE); // make FAB container visible
-        refreshBtn.show();
-        cameraBtn.show();
-    }
 
     private void setupMap() {
         FragmentManager fm = getSupportFragmentManager();
@@ -258,6 +312,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         LatLng pos = new LatLng(loc.getLatitude(), loc.getLongitude());
         Marker marker = map.addMarker(new MarkerOptions().position(pos));
         posts.put(marker, post);
+        G.i("Post #" + post.getId() + " placed on map at " + pos);
     }
 
     private void openPost(Marker marker) {

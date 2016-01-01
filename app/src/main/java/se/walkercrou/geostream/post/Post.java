@@ -81,7 +81,6 @@ public class Post extends Resource implements Parcelable {
     private final Location location;
     private final String fileUrl;
     private final Date created;
-    private boolean hidden;
     protected List<Comment> comments = new ArrayList<>();
 
     private Post(int id, Location location, String fileUrl, Date created) {
@@ -143,7 +142,7 @@ public class Post extends Resource implements Parcelable {
      * @return true if hidden
      */
     public boolean isHidden() {
-        return hidden;
+        return G.app.hidden.getBoolean(Integer.toString(id), false);
     }
 
     /**
@@ -152,7 +151,7 @@ public class Post extends Resource implements Parcelable {
      * @param hidden true if should hide
      */
     public void setHidden(boolean hidden) {
-        this.hidden = hidden;
+        G.app.hidden.edit().putBoolean(Integer.toString(id), hidden).commit();
     }
 
     /**
