@@ -18,8 +18,10 @@ import com.melnykov.fab.FloatingActionButton;
 import java.io.File;
 import java.io.IOException;
 
+import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
 import se.walkercrou.geostream.post.Post;
+import se.walkercrou.geostream.post.PostDetailActivity;
 import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 import se.walkercrou.geostream.util.LocationManager;
@@ -31,31 +33,29 @@ import static android.hardware.Camera.open;
 import static se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaData;
 
 /**
- * Activity launched when you click the camera FAB in the MapsActivity. Takes pictures and video to
- * be posted.
- *
- * TODO: Record video
+ * Activity launched when you click the camera button in the {@link MapActivity}. Takes pictures and
+ * videos to be posted. Provides back navigation to the {@link MapActivity} and opens a
+ * {@link PostDetailActivity} when a new post is created.
  */
 @SuppressWarnings("deprecation")
 public class CameraActivity extends Activity implements PictureCallback, ShutterCallback,
         PreviewCallback {
-
     private static final long PROGRESS_PAUSE_TIME = 100; // 10 seconds, used for recording anim
 
     // camera stuff
     private Camera cam;
-    private CameraPreview preview;
+    private CameraPreview preview; // SurfaceView that is attached to FrameLayout
     private final MediaRecorder recorder = new MediaRecorder();
-    private File outputFile; // video output file
     private boolean recording = false;
+    private File outputFile; // video output file
     private byte[] imageData;
 
     // ui stuff
-    private FrameLayout previewView;
+    private FrameLayout previewView; // the view that the CameraPreview is attached to
     private ProgressBar recordingProgress;
-    private ProgressDialog sendPostProgress;
     private int recordingProgressStatus = 0;
     private final Handler handler = new Handler(); // used for posting ui updates for progress bar
+    private ProgressDialog progressDialog;
     private View cancelBtn;
     private FloatingActionButton recordBtn, sendBtn;
 
@@ -73,8 +73,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // ui references
         cancelBtn = findViewById(R.id.btn_cancel);
         sendBtn = (FloatingActionButton) findViewById(R.id.fab_send);
-        // hide the send button without an animation at start
-        sendBtn.hide(false);
+        sendBtn.hide(false); // hide the send button without an animation at start
 
         // add listeners to record button
         recordBtn = (FloatingActionButton) findViewById(R.id.fab_record);
@@ -123,12 +122,10 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
     @Override
     public void onShutter() {
-        // called when the shutter sound is made
     }
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        // called every frame while the preview is running
     }
 
     // -- Methods called by XML --
@@ -155,9 +152,10 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
             E.connection(this, (dialog, which) -> sendPost(null)).show();
         else {
             // start progress dialog
-            sendPostProgress = ProgressDialog.show(this, getString(R.string.title_wait),
+            preview.stopPlayback();
+            progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
                     getString(R.string.prompt_creating_post), true);
-            new Thread(this::sendPost).start();
+            new Thread(this::sendPost).start(); // send post in background
         }
     }
 
@@ -185,7 +183,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         if (post != null)
             post.startActivity(this);
 
-        sendPostProgress.dismiss();
+        if (progressDialog != null)
+            progressDialog.dismiss();
     }
 
     private void showPreviewButtons() {
@@ -233,9 +232,9 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private boolean startRecording(View view) {
         G.d("startRecording(View)");
         recording = true;
-        new Thread(this::startProgressBar).start();
+        new Thread(this::startProgressBar).start(); // start recording progress bar in background
 
-        // create output file
+        // create video output file
         outputFile = new File(getExternalCacheDir(), Post.fileName(true));
         try {
             outputFile.createNewFile();
@@ -272,7 +271,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // stop recorder and reset for future use
         recorder.stop();
         recorder.reset();
-        recorder.release();
         cam.lock();
 
         G.i("Recording complete. Starting playback.");
@@ -304,6 +302,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
         // set back to zero
         recordingProgress.setProgress(recordingProgressStatus = 0);
-        G.d("end recordingAnimThread");
+        if (recording)
+            handler.post(this::stopRecording); // force stop recording
     }
 }

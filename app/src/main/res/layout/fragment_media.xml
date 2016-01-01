@@ -8,20 +8,24 @@
     <!-- Element that contains either the image or video that belongs to the Post. -->
     <FrameLayout
         android:id="@+id/media"
-        android:layout_above="@+id/created"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
     </FrameLayout>
 
     <!-- Time display -->
-    <TextView
-        android:id="@+id/created"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+    <LinearLayout
+        android:background="@android:color/white"
+        android:layout_width="40dp"
+        android:layout_height="30dp"
+        android:layout_margin="16dp"
+        android:gravity="center"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:gravity="end"
-        android:layout_margin="16dp"
-        android:text="1m" />
+        android:layout_alignParentEnd="true">
+        <TextView
+            android:id="@+id/created"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1m" />
+    </LinearLayout>
 </RelativeLayout>

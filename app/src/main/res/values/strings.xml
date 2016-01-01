@@ -6,6 +6,7 @@
     <string name="title_comments">Comments</string>
     <string name="title_confirm">Hold up!</string>
     <string name="title_wait">Please wait…</string>
+    <string name="title_report">Report</string>
 
     <!-- Actions -->
     <string name="action_cancel">Cancel</string>
@@ -13,6 +14,8 @@
     <string name="action_try_again">Try again</string>
     <string name="action_ok">OK</string>
     <string name="action_delete">Delete</string>
+    <string name="action_comments">Comments</string>
+    <string name="action_report">Report</string>
 
     <!-- Errors -->
     <string name="error_no_camera">%s could not open your device\'s camera.</string>
@@ -31,17 +34,22 @@
     <string name="error_map">%s could not finish creating the map.</string>
     <string name="error_internal">An internal error occurred.</string>
     <string name="error_discard">
-        Something went wrong when deleting your post. Please check your internet connection and try
+        Something went wrong while deleting your post. Please check your internet connection and try
         again.
     </string>
     <string name="error_comment">
-        Something went wrong when commenting on this post. Please check your internet connection and
-        try again.
+        Something went wrong while commenting on this post. Please check your internet connection
+        and try again.
     </string>
     <string name="error_refresh_comments">
-        Could not refresh comments for post. Please check your internet connection and try again.
+        Something went wrong while refreshing the comments for this post. Please check your internet
+        connection and try again.
     </string>
-    <string name="error_empty_reply">Please enter a reply first.</string>
+    <string name="error_empty_reply">Please enter a reply.</string>
+    <string name="error_report">
+        Something went wrong while reporting this post. Please check your internet connection and
+        try again.
+    </string>
 
     <!-- Content descriptions -->
     <string name="description_splash">Splash screen</string>
@@ -55,6 +63,14 @@
         Are you sure you want to delete this? This cannot be undone.
     </string>
     <string name="prompt_creating_post">…your post is now being created.</string>
-    <string name="prompt_get_resource">...while we get that for you.</string>
-    <string name="action_comments">Comments</string>
+    <string name="prompt_get_resource">…while we get that for you.</string>
+    <string name="prompt_discarding_post">…while we delete that for you.</string>
+    <string name="prompt_reporting_post">…while we report that for you.</string>
+
+    <!-- Array values -->
+    <string name="report_reason_ic">Inappropriate content</string>
+    <string name="report_reason_pv">Privacy violation</string>
+    <string name="report_reason_vb">Violence or Bullying</string>
+    <string name="report_reason_sp">Spam</string>
+    <string name="prompt_post_report">Post reported.</string>
 </resources>

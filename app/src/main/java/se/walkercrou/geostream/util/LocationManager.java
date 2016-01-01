@@ -49,6 +49,7 @@ public class LocationManager implements ConnectionCallbacks, OnConnectionFailedL
      * @return last location
      */
     public Location getLastLocation() {
+        // TODO: Permission check
         return LocationServices.FusedLocationApi.getLastLocation(client);
     }
 

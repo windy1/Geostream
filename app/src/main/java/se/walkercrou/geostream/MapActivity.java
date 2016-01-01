@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -37,10 +38,11 @@ import se.walkercrou.geostream.util.LocationManager;
 /**
  * Main activity of application. Displays a map around your current location and displays nearby
  * posts. Provides navigation to {@link CameraActivity} and {@link PostDetailActivity}s.
+ *
+ * TODO: Replace OnMyLocationChangeListener with LocationManager entirely
  */
 public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerClickListener,
-        GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraChangeListener {
-
+        GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraChangeListener, OnMapReadyCallback {
     /**
      * The minimum map zoom enforced by this app. The reasoning behind this is to only make posts
      * that are in the user's vicinity available as a design choice.
@@ -57,8 +59,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     private FloatingActionButton cameraBtn, refreshBtn;
     private View splashScreen; // displayed when application is launched
     private final Handler handler = new Handler();
-    private ProgressDialog refreshProgress;
-
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -67,7 +68,7 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         setContentView(R.layout.activity_map);
         G.init(this); // initialize singleton utility class
 
-        // setup up camera button
+        // setup buttons
         cameraBtn = (FloatingActionButton) findViewById(R.id.fab_camera);
         cameraBtn.hide(false); // hide until splash screen is gone
 
@@ -84,6 +85,39 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         // get initial location
         locationManager = new LocationManager();
         locationManager.connect(this, this::onLocationEstablished);
+    }
+
+    @Override
+    public void onMapReady(GoogleMap map) {
+        this.map = map;
+
+        // get location
+        Location location = locationManager.getLastLocation();
+        if (location == null) {
+            // could not get location
+            E.location(this, (dialog, which) ->
+                    locationManager.connect(this, this::onLocationEstablished)).show();
+            return;
+        }
+
+        // configure map settings
+        UiSettings ui = map.getUiSettings();
+        // lock map to position and do not allow zoom
+        ui.setAllGesturesEnabled(false);
+        ui.setZoomGesturesEnabled(true);
+        ui.setMapToolbarEnabled(false);
+        map.setOnCameraChangeListener(this); // listen for camera changes
+        map.setOnMarkerClickListener(this); // redirect all marker clicks to this
+
+        // setup location updates
+        // TODO: Permission check
+        map.setMyLocationEnabled(true);
+        map.setOnMyLocationChangeListener(this);
+
+        centerMapOnLocation(location);
+        refresh(); // place posts on map
+
+        G.i("Map initialized.");
     }
 
     @Override
@@ -112,25 +146,31 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     }
 
     /**
-     * Refreshes the posts on the map to reflect any new posts or deleted posts on the server.
+     * Show dialog while refreshing the posts on the map to reflect any new posts or deleted posts
+     * on the server.
      */
     public void refresh() {
-        refreshProgress = ProgressDialog.show(this, getString(R.string.title_wait),
-                getString(R.string.prompt_get_resource), true);
-        new Thread(this::doRefresh).start();
+        progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
+                getString(R.string.prompt_get_resource), true); // show dialog
+        new Thread(this::_refresh).start(); // start refresh task in background
     }
 
-    private void doRefresh() {
+    private void _refresh() {
+        // get post list from server
         List<Post> newPosts;
         try {
-            newPosts = getPosts();
+            newPosts = Post.all(this, (error) -> E.internal(this, error));
         } catch (IOException e) {
             e.printStackTrace();
             E.connection(this, (d, w) -> refresh());
             return;
         }
 
-        // remove posts that are no longer present
+        // post list should never be null at this point
+        if (newPosts == null)
+            throw new RuntimeException("null Post list with no error");
+
+        // remove posts that are no longer present in list
         Iterator<Map.Entry<Marker, Post>> iter = posts.entrySet().iterator();
         int removed = 0;
         while (iter.hasNext()) {
@@ -160,14 +200,17 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
                 if (oldPost.getId() == newPost.getId())
                     found = true;
             }
+
             if (!found) {
                 handler.post(() -> placePost(newPost)); // post to main thread
                 added++;
             }
         }
 
-        refreshProgress.dismiss();
+        if (progressDialog != null)
+            progressDialog.dismiss();
 
+        // print some info about task
         G.i("Map refreshed.");
         G.i("  Removed: " + removed);
         G.i("  Added: " + added);
@@ -199,39 +242,8 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
     }
 
     private void setupMap() {
-        Location location = locationManager.getLastLocation();
-        if (location == null) {
-            // could not get location
-            E.location(this, (dialog, which) ->
-                    locationManager.connect(this, this::onLocationEstablished)).show();
-            return;
-        }
-
-        // get map object
         FragmentManager fm = getSupportFragmentManager();
-        map = ((SupportMapFragment) fm.findFragmentById(R.id.map)).getMap();
-        if (map == null) {
-            E.map(this).show();
-            return;
-        }
-
-        // configure map settings
-        UiSettings ui = map.getUiSettings();
-        // lock map to position and do not allow zoom
-        ui.setAllGesturesEnabled(false);
-        ui.setZoomGesturesEnabled(true);
-        ui.setMapToolbarEnabled(false);
-        map.setOnCameraChangeListener(this); // listen for camera changes
-        map.setOnMarkerClickListener(this); // redirect all marker clicks to this
-
-        // setup location updates
-        map.setMyLocationEnabled(true);
-        map.setOnMyLocationChangeListener(this);
-
-        centerMapOnLocation(location);
-        refresh(); // place posts on map
-
-        G.i("Map initialized.");
+        ((SupportMapFragment) fm.findFragmentById(R.id.map)).getMapAsync(this);
     }
 
     private void centerMapOnLocation(Location location) {
@@ -255,9 +267,5 @@ public class MapActivity extends FragmentActivity implements GoogleMap.OnMarkerC
         Intent intent = new Intent(this, PostDetailActivity.class);
         intent.putExtra(PostDetailActivity.EXTRA_POST, post);
         startActivity(intent);
-    }
-
-    private List<Post> getPosts() throws IOException {
-        return Post.all(this, (error) -> E.internal(this).show());
     }
 }

@@ -13,8 +13,8 @@ import java.io.IOException;
  */
 @SuppressWarnings("deprecation")
 public class VideoPreview extends SurfaceView implements SurfaceHolder.Callback {
-    private final MediaPlayer player = new MediaPlayer();
-    private final String dataSource;
+    protected final MediaPlayer player = new MediaPlayer();
+    private final String dataSource; // path to video
 
     public VideoPreview(Context context, String dataSource) {
         super(context);

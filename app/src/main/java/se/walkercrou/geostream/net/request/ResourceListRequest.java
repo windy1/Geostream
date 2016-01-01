@@ -11,7 +11,7 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
 /**
  * Represents a request to the server that gets a list of resources
  */
-public class ResourceListRequest <T extends Resource> extends Request<ResourceResponse<T>> {
+public class ResourceListRequest<T extends Resource> extends Request<ResourceResponse<T>> {
     protected final Context c;
     protected final Class<T> resourceClass;
 

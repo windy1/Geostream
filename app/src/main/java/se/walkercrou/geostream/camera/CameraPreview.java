@@ -52,8 +52,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void stopPlayback() {
-        player.stop();
-        player.release();
+        if (player.isPlaying()) {
+            player.stop();
+            player.release();
+        }
     }
 
     /**

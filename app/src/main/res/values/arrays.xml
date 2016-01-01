@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="report_reasons">
+        <item>@string/report_reason_ic</item>
+        <item>@string/report_reason_pv</item>
+        <item>@string/report_reason_vb</item>
+        <item>@string/report_reason_sp</item>
+    </string-array>
+</resources>

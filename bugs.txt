@@ -3,3 +3,4 @@ trouble reconnecting to location services if location is lost
 app crashes if you take a video, cancel, and try to take another video
 video is distorted on post details
 video doesn't pause when switching tabs
+configure server permissions

@@ -2,10 +2,12 @@ package se.walkercrou.geostream.post;
 
 import android.app.ActionBar;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -17,10 +19,10 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -33,22 +35,22 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.MediaRequest;
-import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
 import se.walkercrou.geostream.net.response.MediaResponse;
-import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 
 /**
- * Represents an activity that displays a Post's details.
+ * Activity launched when a new {@link Post} is created or a marker is clicked on the
+ * {@link MapActivity}. The intent must contain a {@link #EXTRA_POST} with the {@link Post} that
+ * is to be displayed. Provides back navigation to the {@link MapActivity}.
  */
 @SuppressWarnings("deprecation")
 public class PostDetailActivity extends FragmentActivity implements ViewPager.OnPageChangeListener {
@@ -56,16 +58,43 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
      * Extra that contains the Post that is expected in this activity.
      */
     public static final String EXTRA_POST = "post";
+    /**
+     * The ViewPager position for the {@link MediaFragment}.
+     */
+    public static final int PAGE_MEDIA = 0;
+    /**
+     * The ViewPager position for the {@link CommentsFragment}.
+     */
+    public static final int PAGE_COMMENTS = 1;
+    /**
+     * ActionBar button to delete the Post.
+     */
+    public static final int ACTION_DISCARD = 0;
+    /**
+     * ActionBar button to report the Post.
+     */
+    public static final int ACTION_REPORT = 1;
+    /**
+     * ActionBar button to open the comments.
+     */
+    public static final int ACTION_COMMENTS = 2;
+    /**
+     * Handles video playback. Static so the {@link MediaFragment} can access it. This is okay
+     * because only one PostDetailActivity will ever be opened at a time anyways.
+     */
+    private static VideoHandler videoHandler;
 
     private Post post;
-    private String clientSecret;
-    private Object media;
+    private String clientSecret; // signifies ownership of the post
+    private Object media; // either a Bitmap or String file path to video file
     private ViewPager viewPager;
     private MenuItem commentsAction;
+    private ProgressDialog progressDialog;
 
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
+        requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY); // as to not distort the media
         setContentView(R.layout.activity_post_detail);
 
         // get the passed post object
@@ -75,27 +104,34 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
         // see if we have the client secret for this post, okay if not
         clientSecret = G.app.secrets.getString(Integer.toString(post.getId()), null);
+        if (clientSecret != null) {
+            G.i("This device is the owner of the Post");
+            G.i("  client_secret=\"" + clientSecret + "\"");
+        }
 
-        // get bitmap from server
-        downloadMedia();
+        downloadMedia(); // sets 'media' to either a Bitmap or String file path
+
+        videoHandler = new VideoHandler(getActionBar()); // assign static video handler to this activity
 
         // setup view paging between post and comments
-        PostDetailAdapter adapter = new PostDetailAdapter(getSupportFragmentManager());
+        PostDetailPagerAdapter adapter = new PostDetailPagerAdapter(getSupportFragmentManager());
         viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(adapter);
         viewPager.addOnPageChangeListener(this);
 
-        setupActionBar();
+        // setup the action bar
+        ActionBar bar = getActionBar();
+        if (bar != null)
+            bar.setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // show "discard" button if we have the client secret for this post
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.post_detail_activity_actions, menu);
-        commentsAction = menu.getItem(1);
+        getMenuInflater().inflate(R.menu.post_detail_activity_actions, menu);
+        commentsAction = menu.getItem(ACTION_COMMENTS); // save comments button for later
         if (clientSecret == null)
-            menu.getItem(0).setVisible(false);
+            // hide "discard" button if we don't have a client secret
+            menu.getItem(ACTION_DISCARD).setVisible(false);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -103,29 +139,34 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_discard:
-                // show confirmation dialog
+                // show confirmation dialog for deletion
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.title_confirm)
                         .setMessage(R.string.prompt_confirm_delete)
                         .setPositiveButton(R.string.action_delete, (dialog, which) -> {
                             dialog.dismiss();
-                            try {
-                                discard();
-                            } catch (IOException e) {
-                                E.discard(this).show();
-                            }
+                            deletePost();
                         })
-                        .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
+                        .setNegativeButton(R.string.action_cancel, (dialog, which) ->
+                                dialog.dismiss())
                         .show();
                 return true;
             case R.id.action_comments:
                 // switch to comments
-                viewPager.setCurrentItem(1);
+                viewPager.setCurrentItem(PAGE_COMMENTS);
+                return true;
+            case R.id.action_report:
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.title_report)
+                        .setItems(R.array.report_reasons, (dialog, which) -> {
+                            reportPost(Flag.Reason.values()[which]);
+                        })
+                        .show();
                 return true;
             case android.R.id.home:
                 // if at comments, go back to media, otherwise go back to map
-                if (viewPager.getCurrentItem() == 1)
-                    viewPager.setCurrentItem(0);
+                if (viewPager.getCurrentItem() == PAGE_COMMENTS)
+                    viewPager.setCurrentItem(PAGE_MEDIA);
                 else
                     NavUtils.navigateUpFromSameTask(this);
                 return true;
@@ -140,11 +181,14 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
     @Override
     public void onPageSelected(int position) {
-        // don't show the comments button when in comments
-        if (position == 0)
-            commentsAction.setVisible(true);
-        else
-            commentsAction.setVisible(false);
+        videoHandler.onPageSelected(position);
+        if (position == PAGE_MEDIA) {
+            // switching to media page
+            commentsAction.setVisible(true); // show comments button
+        } else {
+            // switching to comments page
+            commentsAction.setVisible(false); // hide comments button
+        }
     }
 
     @Override
@@ -152,63 +196,68 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     /**
-     * Attempts to delete this Post on the server and client.
+     * Attempts to report this Post to the server.
+     *
+     * @param reason of report
      */
-    public void discard() throws IOException {
-        G.d("client secret = " + clientSecret);
-        ResourceResponse<Post> response = new ResourceDeleteRequest<>(this, Post.class,
-                Resource.POSTS, post.getId(), clientSecret).sendInBackground(this);
-        if (response == null)
-            throw new RuntimeException("Could not discard post");
-        else if (response.isError())
-            throw new RuntimeException("Could not discard post: " + response.getErrorDetail());
+    public void reportPost(Flag.Reason reason) {
+        progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
+                getString(R.string.prompt_reporting_post), true);
+        new Thread(() -> _reportPost(reason)).start();
+    }
+
+    private void _reportPost(Flag.Reason reason) {
+        try {
+            post.flag(this, reason, (error) -> E.internal(this, error));
+        } catch (IOException e) {
+            e.printStackTrace();
+            E.report(this);
+            return;
+        }
+
+        if (progressDialog != null)
+            progressDialog.dismiss();
+
+        post.setHidden(true);
+        Toast.makeText(this, R.string.prompt_post_report, Toast.LENGTH_LONG).show();
         startActivity(new Intent(this, MapActivity.class));
     }
 
     /**
-     * Returns the string to display for timestamps on Posts or Comments. Compared to the current
-     * date.
-     *
-     * @param date to get difference of
-     * @return display string
+     * Attempts to delete this Post on the server and client.
      */
-    public static String getTimeDisplay(Date date) {
-        Date now = Calendar.getInstance(G.STANDARD_TIME_ZONE).getTime();
-        long diff = now.getTime() - date.getTime();
-
-        // display "<1m" if in the seconds
-        long seconds = diff / 1000;
-        if (seconds < 60)
-            return "<1m";
-
-        // display minutes if >1m but <1h
-        long minutes = seconds / 60;
-        if (minutes < 60)
-            return minutes + "m";
-
-        // display hours if >1h but <1d
-        long hours = minutes / 60;
-        if (hours < 24)
-            return hours + "h";
-
-        // otherwise display days
-        return (hours / 24) + "d";
+    public void deletePost() {
+        progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
+                getString(R.string.prompt_discarding_post), true);
+        new Thread(this::_deletePost).start();
     }
 
-    private void setupActionBar() {
-        ActionBar bar = getActionBar();
-        if (bar != null)
-            bar.setDisplayHomeAsUpEnabled(true);
+    private void _deletePost() {
+        G.d("client secret = " + clientSecret);
+        try {
+            post.delete(this, clientSecret, (error) -> E.internal(this, error));
+        } catch (IOException e) {
+            e.printStackTrace();
+            E.discard(this);
+            return;
+        }
+
+        if (progressDialog != null)
+            progressDialog.dismiss();
+
+        startActivity(new Intent(this, MapActivity.class));
     }
 
     private void downloadMedia() {
+        // TODO: Move media request handling to Post
+        // download the media for this post which is either an image or video
         String url = post.getMediaUrl();
         G.i("Downloading Post media from: " + url);
 
         // get response from server
         MediaResponse response;
         try {
-            response = new MediaRequest(this, url).sendInBackground(this);
+            response = new MediaRequest(this, url).sendInBackground();
         } catch (IOException e) {
             E.connection(this, (d, w) -> downloadMedia());
             return;
@@ -240,12 +289,112 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     /**
-     * Handles tab-to-tab navigation.
+     * Wrapper class for {@link MediaPlayer} to control playback from parent activity within the
+     * fragment. This is necessary because the Activity cannot access the {@link MediaFragment} from
+     * the parent activity.
      */
-    public class PostDetailAdapter extends FragmentPagerAdapter {
+    public static class VideoHandler {
+        private final ActionBar ab;
+        private MediaPlayer player;
+        private final Handler handler = new Handler();
+        private final Map<DelayedHideTask, Boolean> hideTasks = new HashMap<>();
+
+        public VideoHandler(ActionBar ab) {
+            this.ab = ab;
+        }
+
+        /**
+         * Called when the {@link MediaPlayer} is first initialized.
+         */
+        public void onAddView() {
+            hideActionBar();
+        }
+
+        /**
+         * Called when the page in the ViewPager is changed.
+         *
+         * @param position of page
+         */
+        public void onPageSelected(int position) {
+            if (player == null)
+                return;
+
+            if (position == 0) {
+                // switched to media fragment
+                if (!player.isPlaying())
+                    player.start();
+                hideActionBar();
+            } else if (player.isPlaying()) {
+                // switched to comments fragment and playing
+                player.pause();
+                showActionBar();
+            }
+        }
+
+        /**
+         * Called when the video is clicked.
+         */
+        public void onVideoClick() {
+            if (player == null)
+                return;
+
+            if (player.isPlaying()) {
+                player.pause();
+                showActionBar();
+            } else {
+                player.start();
+                hideActionBar();
+            }
+        }
+
+        private void hideActionBar() {
+            cancelHideTasks(); // cancel future hides
+            DelayedHideTask task = new DelayedHideTask();
+            hideTasks.put(task, false);
+            task.start();
+        }
+
+        private void showActionBar() {
+            cancelHideTasks(); // cancel future hides
+            ab.show();
+        }
+
+        private void cancelHideTasks() {
+            for (DelayedHideTask task : hideTasks.keySet())
+                hideTasks.put(task, true);
+        }
+
+        private class DelayedHideTask extends Thread {
+            @Override
+            public void run() {
+                // wait 3 seconds
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                // hide action bar
+                boolean cancelled = hideTasks.get(this);
+                if (!cancelled)
+                    handler.post(ab::hide);
+
+                // remove from map
+                hideTasks.remove(this);
+            }
+        }
+    }
+
+    /**
+     * Handles navigation between the {@link MediaFragment} and the {@link CommentsFragment}.
+     */
+    public class PostDetailPagerAdapter extends FragmentPagerAdapter {
+        /**
+         * The total number of pages in the {@link ViewPager}.
+         */
         public static final int NUM_PAGES = 2;
 
-        public PostDetailAdapter(FragmentManager fm) {
+        public PostDetailPagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
@@ -253,14 +402,19 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    MediaFragment frag = new MediaFragment();
+                    // prepare arguments
                     Bundle args = new Bundle();
-                    G.d("media = " + media);
-                    if (media instanceof String)
-                        args.putString(MediaFragment.ARG_VIDEO_FILE, media.toString());
-                    else
-                        args.putParcelable(MediaFragment.ARG_IMAGE, (Bitmap) media);
                     args.putParcelable(MediaFragment.ARG_POST, post);
+                    if (media instanceof String) {
+                        // video
+                        args.putString(MediaFragment.ARG_VIDEO_FILE, media.toString());
+                    } else {
+                        // image
+                        args.putParcelable(MediaFragment.ARG_IMAGE, (Bitmap) media);
+                    }
+
+                    // create fragment
+                    MediaFragment frag = new MediaFragment();
                     frag.setArguments(args);
                     return frag;
                 case 1:
@@ -283,9 +437,20 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     /**
      * Represents the tab that shows the media of the post.
      */
-    public static class MediaFragment extends Fragment {
+    public static class MediaFragment extends Fragment implements View.OnClickListener {
+        /**
+         * {@link Bitmap}: Media image of post. Passed only in the absence of
+         * {@link #ARG_VIDEO_FILE}.
+         */
         public static final String ARG_IMAGE = "image";
+        /**
+         * {@link String}: File path to video file of post. Passed only in the absence of
+         * {@link #ARG_IMAGE}.
+         */
         public static final String ARG_VIDEO_FILE = "video_file";
+        /**
+         * {@link Post}: The post of the activity.
+         */
         public static final String ARG_POST = "post";
 
         @Override
@@ -297,16 +462,23 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             Bitmap bmp = args.getParcelable(ARG_IMAGE);
             G.d("bmp = " + bmp);
             FrameLayout fl = (FrameLayout) view.findViewById(R.id.media);
+            fl.setOnClickListener(this);
 
             if (bmp == null) {
                 // not an image, check for video
                 String videoFilePath = args.getString(ARG_VIDEO_FILE);
                 if (videoFilePath == null)
                     throw new RuntimeException("no image or video passed to MediaFragment");
+
+                // add video to view
                 VideoPreview video = new VideoPreview(getContext(), videoFilePath);
                 fl.addView(video);
+
+                // set the player within the wrapper so the playback can be controlled from activity
+                videoHandler.player = video.player;
+                videoHandler.onAddView();
             } else {
-                // image found
+                // image found, add to view
                 ImageView image = new ImageView(getContext());
                 image.setImageBitmap(bmp);
                 fl.addView(image);
@@ -316,9 +488,15 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             Post post = args.getParcelable(ARG_POST);
             if (post != null)
                 ((TextView) view.findViewById(R.id.created))
-                        .setText(getTimeDisplay(post.getCreationDate()));
+                        .setText(G.getTimeDisplay(post.getCreationDate()));
 
             return view;
+        }
+
+        @Override
+        public void onClick(View v) {
+            // called when the FrameLayout is clicked
+            videoHandler.onVideoClick();
         }
     }
 
@@ -336,21 +514,25 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             // set the date, the comment content is set automatically in the super class using
             // Comment.toString()
             Date date = getItem(position).getCreationDate();
-            ((TextView) v.findViewById(R.id.created)).setText(getTimeDisplay(date));
+            ((TextView) v.findViewById(R.id.created)).setText(G.getTimeDisplay(date));
             return v;
         }
     }
 
     /**
-     * Represents the tab with the comments section
+     * Represents the comments section.
      */
     public static class CommentsFragment extends Fragment implements View.OnClickListener,
             SwipeRefreshLayout.OnRefreshListener {
+        /**
+         * {@link Post}: The post of the activity.
+         */
         public static final String ARG_POST = "post";
+
         private View view;
         private CommentAdapter adapter;
         private Post post;
-        private SwipeRefreshLayout swipeLayout;
+        private SwipeRefreshLayout swipeLayout; // ListView container that handles refreshing
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle b) {
@@ -364,7 +546,6 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                 throw new RuntimeException();
 
             // add comments to list view
-            List<Comment> comments = post.getComments();
             adapter = new CommentAdapter(getContext(), new ArrayList<>(post.getComments()));
             ListView listView = (ListView) view.findViewById(R.id.list_comments);
             listView.setAdapter(adapter);
@@ -383,7 +564,6 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             // get comment content from view
             EditText field = (EditText) view.findViewById(R.id.text_comment);
             String content = field.getText().toString().trim();
-            Bundle args = getArguments();
 
             // make sure comment has content
             if (content.isEmpty()) {
@@ -401,6 +581,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                 return;
             }
 
+            // add comment to ListView
             if (comment != null) {
                 G.d(comment.getContent());
                 adapter.add(comment);

@@ -14,7 +14,7 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
  * provided in order to delete a resource on the server which is received when the resource is
  * created.
  */
-public class ResourceDeleteRequest <T extends Resource> extends ResourceDetailRequest<T> {
+public class ResourceDeleteRequest<T extends Resource> extends ResourceDetailRequest<T> {
     private final String clientSecret;
 
     public ResourceDeleteRequest(Context c, Class<T> resourceClass, String resourceName, int resourceId,

@@ -20,7 +20,8 @@ import se.walkercrou.geostream.net.response.ResourceResponse;
  * data. This class extends {@link ResourceListRequest} because it follows the same URL pattern (no
  * resource ID required).
  */
-public class ResourceCreateRequest <T extends Resource> extends ResourceListRequest<T> {
+public class ResourceCreateRequest<T extends Resource> extends ResourceListRequest<T>
+        implements ParameterizedRequest {
     // Internal map of data to write
     private final Map<String, Object> parameters = new HashMap<>();
 
@@ -28,13 +29,7 @@ public class ResourceCreateRequest <T extends Resource> extends ResourceListRequ
         super(c, resourceClass, resourceName);
     }
 
-    /**
-     * Sets the value of a parameter to write to the form.
-     *
-     * @param param to write
-     * @param value value of param
-     * @return this request
-     */
+    @Override
     public ResourceCreateRequest set(String param, Object value) {
         parameters.put(param, value);
         return this;

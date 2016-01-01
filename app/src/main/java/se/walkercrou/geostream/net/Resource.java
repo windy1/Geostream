@@ -13,4 +13,8 @@ public abstract class Resource {
      * @see se.walkercrou.geostream.post.Comment
      */
     public static final String COMMENTS = "comments";
+    /**
+     * @see se.walkercrou.geostream.post.Flag
+     */
+    public static final String FLAGS = "flags";
 }

@@ -34,7 +34,8 @@ public final class E {
      * @param c context
      * @return error dialog
      */
-    public static AlertDialog internal(Activity c) {
+    public static AlertDialog internal(Activity c, String error) {
+        G.e("internal error. server says: \"" + error + "\"");
         String msg = c.getString(R.string.error_internal, G.app.name);
         return builder(c, msg).setPositiveButton(R.string.action_ok, ((d, w) -> c.finish())).show();
     }
@@ -52,6 +53,25 @@ public final class E {
                 .create();
     }
 
+    /**
+     * Returns a dialog to display when an error occurs while attempting to report a post.
+     *
+     * @param c context
+     * @return alert dialog
+     */
+    public static AlertDialog report(Context c) {
+        G.e("could not report post");
+        return builder(c, R.string.error_report)
+                .setPositiveButton(R.string.action_ok, (d, w) -> {})
+                .create();
+    }
+
+    /**
+     * Returns a dialog to display when an error occurs while attempting to delete a post.
+     *
+     * @param c context
+     * @return alert dialog
+     */
     public static AlertDialog discard(Context c) {
         G.e("could not discard post");
         return builder(c, R.string.error_discard)
@@ -59,6 +79,12 @@ public final class E {
                 .create();
     }
 
+    /**
+     * Returns a dialog to display when an error occurs while attempting to comment on a post.
+     *
+     * @param c context
+     * @return alert dialog
+     */
     public static AlertDialog comment(Context c) {
         G.e("could not comment");
         return builder(c, R.string.error_comment)

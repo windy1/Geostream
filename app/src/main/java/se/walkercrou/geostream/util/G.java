@@ -9,6 +9,7 @@ import android.util.Log;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -19,15 +20,6 @@ import se.walkercrou.geostream.R;
  * Helper class for convenience static functions related to application information
  */
 public final class G {
-    // Application name
-    public final String name;
-    // Location of application server
-    public final String serverUrl;
-    // Collection of "client_secrets" for Post manipulation
-    public final SharedPreferences secrets;
-    // True if the splash screen has been displayed before
-    public boolean splashed = false;
-
     /**
      * Singleton object for accessing properties.
      */
@@ -50,6 +42,11 @@ public final class G {
     static {
         STANDARD_DATE_FORMAT.setTimeZone(STANDARD_TIME_ZONE);
     }
+
+    public final String name; // application name
+    public final String serverUrl; // location of server
+    public final SharedPreferences secrets; // collection of client_secrets to edit posts
+    public boolean splashed = false; // true if splash screen has been displayed
 
     private G(Context context) {
         name = context.getString(R.string.app_name);
@@ -142,5 +139,35 @@ public final class G {
         String time = dateTime[1].substring(0, dateTime[1].indexOf('.'));
         // parse with standard date format, in UTC, like the server
         return STANDARD_DATE_FORMAT.parse(date + ' ' + time);
+    }
+
+    /**
+     * Returns the string to display for timestamps on Posts or Comments. Compared to the current
+     * date.
+     *
+     * @param date to get difference of
+     * @return display string
+     */
+    public static String getTimeDisplay(Date date) {
+        Date now = Calendar.getInstance(STANDARD_TIME_ZONE).getTime();
+        long diff = now.getTime() - date.getTime();
+
+        // display "<1m" if in the seconds
+        long seconds = diff / 1000;
+        if (seconds < 60)
+            return "<1m";
+
+        // display minutes if >1m but <1h
+        long minutes = seconds / 60;
+        if (minutes < 60)
+            return minutes + "m";
+
+        // display hours if >1h but <1d
+        long hours = minutes / 60;
+        if (hours < 24)
+            return hours + "h";
+
+        // otherwise display days
+        return (hours / 24) + "d";
     }
 }

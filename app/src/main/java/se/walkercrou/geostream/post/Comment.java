@@ -76,7 +76,7 @@ public class Comment extends Resource implements Parcelable {
         ResourceCreateRequest<Comment> request
                 = new ResourceCreateRequest<>(c, Comment.class, Resource.COMMENTS);
         request.set(PARAM_POST, post.getId()).set(PARAM_CONTENT, content);
-        ResourceResponse<Comment> response = request.sendInBackground(c);
+        ResourceResponse<Comment> response = request.sendInBackground();
 
         // check for error
         if (response == null) {

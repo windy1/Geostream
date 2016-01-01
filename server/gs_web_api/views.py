@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Post, Comment
-from .serializers import PostSerializer, CommentSerializer
+from .models import Post, Comment, Flag
+from .serializers import PostSerializer, CommentSerializer, FlagSerializer
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -32,3 +32,8 @@ class PostViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+
+
+class FlagViewSet(viewsets.ModelViewSet):
+    queryset = Flag.objects.all()
+    serializer_class = FlagSerializer

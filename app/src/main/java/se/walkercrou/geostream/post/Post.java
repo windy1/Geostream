@@ -20,6 +20,7 @@ import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaData;
+import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
 import se.walkercrou.geostream.net.request.ResourceDetailRequest;
 import se.walkercrou.geostream.net.request.ResourceListRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
@@ -76,10 +77,11 @@ public class Post extends Resource implements Parcelable {
      */
     public static final String VIDEO_FILE_EXTENSION = "mp4";
 
-    private int id;
+    private final int id;
     private final Location location;
-    private String fileUrl;
-    private Date created;
+    private final String fileUrl;
+    private final Date created;
+    private boolean hidden;
     protected List<Comment> comments = new ArrayList<>();
 
     private Post(int id, Location location, String fileUrl, Date created) {
@@ -136,6 +138,24 @@ public class Post extends Resource implements Parcelable {
     }
 
     /**
+     * Returns true if this post is hidden for this device.
+     *
+     * @return true if hidden
+     */
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    /**
+     * Sets whether this post should be hidden for this device.
+     *
+     * @param hidden true if should hide
+     */
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    /**
      * Starts this Post's detail activity from the specified context.
      *
      * @param c context to start from
@@ -149,12 +169,26 @@ public class Post extends Resource implements Parcelable {
     /**
      * Creates a new comment on this post.
      *
+     * @param c context
      * @param content to comment
      * @param callback in case of error
      * @return comment
      */
     public Comment comment(Context c, String content, ErrorCallback callback) throws IOException {
         return Comment.create(c, this, content, callback);
+    }
+
+    /**
+     * Creates a new flag on this post and sends it to the server for review.
+     *
+     * @param c context
+     * @param reason for flagging
+     * @param callback in case of error
+     * @return flag
+     * @throws IOException
+     */
+    public Flag flag(Context c, Flag.Reason reason, ErrorCallback callback) throws IOException {
+        return Flag.create(c, this, reason, callback);
     }
 
     /**
@@ -166,7 +200,7 @@ public class Post extends Resource implements Parcelable {
         // send request to server
         ResourceDetailRequest<Post> request
                 = new ResourceDetailRequest<>(c, Post.class, Resource.POSTS, id);
-        ResourceResponse<Post> response = request.sendInBackground(c);
+        ResourceResponse<Post> response = request.sendInBackground();
 
         // check for error
         if (response == null) {
@@ -178,6 +212,26 @@ public class Post extends Resource implements Parcelable {
         }
 
         this.comments = response.get().comments;
+    }
+
+    /**
+     * Deletes this Post on the server.
+     */
+    public boolean delete(Context c, String clientSecret, ErrorCallback callback)
+            throws IOException {
+        ResourceDeleteRequest<Post> request
+                = new ResourceDeleteRequest<>(c, Post.class, Resource.POSTS, id, clientSecret);
+        ResourceResponse<Post> response = request.sendInBackground();
+
+        if (response == null) {
+            callback.onError(null);
+            return false;
+        } else if (response.isError()) {
+            callback.onError(response.getErrorDetail());
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -197,7 +251,7 @@ public class Post extends Resource implements Parcelable {
                 .set(PARAM_LNG, location.getLongitude())
                 .set(PARAM_MEDIA_FILE, data)
                 .set(PARAM_IS_VIDEO, false);
-        ResourceResponse<Post> response = request.sendInBackground(c);
+        ResourceResponse<Post> response = request.sendInBackground();
 
         G.d("response = " + response);
 
@@ -233,7 +287,7 @@ public class Post extends Resource implements Parcelable {
     public static List<Post> all(Context c, ErrorCallback callback) throws IOException {
         // send request to server
         ResourceResponse<Post> response = new ResourceListRequest<>(c, Post.class, Resource.POSTS)
-                .sendInBackground(c);
+                .sendInBackground();
         G.d(response);
 
         // read response

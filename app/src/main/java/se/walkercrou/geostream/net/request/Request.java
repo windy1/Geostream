@@ -1,15 +1,12 @@
 package se.walkercrou.geostream.net.request;
 
-import android.content.Context;
 import android.os.AsyncTask;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.ExecutionException;
 
 import se.walkercrou.geostream.net.response.Response;
-import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 
 /**
@@ -72,7 +69,7 @@ public abstract class Request<T extends Response> {
      *
      * @return response
      */
-    public T sendInBackground(Context c) throws IOException {
+    public T sendInBackground() throws IOException {
         G.d("Request: " + url);
         try {
             return new AsyncTask<Void, Void, T>() {

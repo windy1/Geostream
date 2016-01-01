@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Post, Comment
+from .models import Post, Comment, Flag
+
+
+class FlagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Flag
+        fields = ('post', 'created', 'reason',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -13,4 +19,4 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'created', 'lat', 'lng', 'media_file', 'is_video', 'comments')
+        fields = ('id', 'created', 'lat', 'lng', 'media_file', 'comments')
