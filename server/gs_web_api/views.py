@@ -49,24 +49,23 @@ class PostViewSet(viewsets.ModelViewSet):
     @list_route()
     def range(self, request):
         data = request.query_params
-        print(str(data))
         # make range parameters are present
         if 'fromLat' not in data or 'toLat' not in data or 'fromLng' not in data or 'toLng' not in data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        print('DEBUG2')
 
         fromLat = float(data['fromLat'])
         toLat = float(data['toLat'])
         fromLng = float(data['fromLng'])
         toLng = float(data['toLng'])
 
+        # find posts that are within the range
         posts = Post.objects.all()
         inRange = []
         for post in posts:
             if post.lat >= fromLat and post.lat <= toLat and post.lng >= fromLng and post.lng <= toLng:
                 inRange.append(post)
 
+        # return list of posts
         serializer = self.get_serializer(inRange, many=True)
         return Response(serializer.data)
 
