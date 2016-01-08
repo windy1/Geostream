@@ -80,4 +80,6 @@
     <string name="prompt_confirm_hide">Are you sure you want to hide this? This cannot be undone.</string>
     <string name="title_lifetime">Post lifetime</string>
     <string name="prompt_lifetime">How many hours should this post be available?</string>
+    <string name="title_delete_comment">Delete comment</string>
+    <string name="error_delete_comment">Something went wrong while deleting your comment. Please check your internet connection and try again.</string>
 </resources>

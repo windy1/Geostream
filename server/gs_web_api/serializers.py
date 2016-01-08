@@ -11,7 +11,7 @@ class FlagSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('post', 'created', 'content',)
+        fields = ('id', 'post', 'created', 'content',)
 
 
 class PostSerializer(serializers.ModelSerializer):

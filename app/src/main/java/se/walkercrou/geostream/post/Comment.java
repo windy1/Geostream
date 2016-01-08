@@ -14,6 +14,7 @@ import java.util.Date;
 import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
+import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
 import se.walkercrou.geostream.util.G;
 
@@ -21,6 +22,10 @@ import se.walkercrou.geostream.util.G;
  * Represents a comment within a Post
  */
 public class Comment extends Resource implements Parcelable {
+    /**
+     * Integer: Unique identifier of comment
+     */
+    public static final String PARAM_ID = "id";
     /**
      * Integer: Post ID that this comment belongs to.
      */
@@ -33,13 +38,28 @@ public class Comment extends Resource implements Parcelable {
      * Date: The date this comment was created.
      */
     public static final String PARAM_CREATED = "created";
+    /**
+     * String: Client secret for modifying comment in the future
+     */
+    public static final String PARAM_CLIENT_SECRET = "client_secret";
 
+    private final int id;
     private final String content;
     private final Date created;
 
-    private Comment(String content, Date created) {
+    private Comment(int id, String content, Date created) {
+        this.id = id;
         this.content = content;
         this.created = created;
+    }
+
+    /**
+     * Returns this comments unique identifier.
+     *
+     * @return unique id
+     */
+    public int getId() {
+        return id;
     }
 
     /**
@@ -58,6 +78,23 @@ public class Comment extends Resource implements Parcelable {
      */
     public Date getCreationDate() {
         return created;
+    }
+
+    public boolean delete(Context c, String clientSecret, ErrorCallback callback)
+            throws IOException {
+        ResourceDeleteRequest<Comment> request = new ResourceDeleteRequest<>(c, Comment.class,
+                Resource.COMMENTS, id, clientSecret);
+        ResourceResponse<Comment> response = request.sendInBackground();
+
+        if (response == null) {
+            callback.onError(null);
+            return false;
+        } else if (response.isError()) {
+            callback.onError(response.getErrorDetail());
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -101,7 +138,14 @@ public class Comment extends Resource implements Parcelable {
      * @throws JSONException if error with json
      */
     public static Comment parse(Context c, JSONObject obj) throws JSONException, ParseException {
-        return new Comment(obj.getString(PARAM_CONTENT),
+        int id = obj.getInt(PARAM_ID);
+
+        // check for client secret and save if present
+        String clientSecret = obj.optString(PARAM_CLIENT_SECRET, null);
+        if (clientSecret != null)
+            G.app.commentSecrets.edit().putString(Integer.toString(id), clientSecret).commit();
+
+        return new Comment(id, obj.getString(PARAM_CONTENT),
                 G.parseDateString(obj.getString(PARAM_CREATED)));
     }
 
@@ -115,13 +159,15 @@ public class Comment extends Resource implements Parcelable {
      * Allows comments to be passed between activities along with their posts.
      *
      * Order:
-     * 1. String: Content
-     * 2. String: Creation date
+     * 1. Integer: ID
+     * 2. String: Content
+     * 3. String: Creation date
      */
 
     public static Parcelable.Creator<Comment> CREATOR = new Creator<Comment>() {
         @Override
         public Comment createFromParcel(Parcel source) {
+            int id = source.readInt();
             String content = source.readString();
 
             Date date;
@@ -131,7 +177,7 @@ public class Comment extends Resource implements Parcelable {
                 throw new RuntimeException(e);
             }
 
-            return new Comment(content, date);
+            return new Comment(id, content, date);
         }
 
         @Override
@@ -147,6 +193,7 @@ public class Comment extends Resource implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
         dest.writeString(content);
         dest.writeString(G.STANDARD_DATE_FORMAT.format(created));
     }

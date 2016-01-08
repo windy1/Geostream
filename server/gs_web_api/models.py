@@ -25,6 +25,16 @@ class Post(models.Model):
 def post_delete(sender, instance, **kwargs):
     instance.media_file.delete(False)  # delete the models media_file when a Post is deleted
 
+    # delete comments associated with post
+    comments = Comment.objects.filter(post=instance.id)
+    for comment in comments:
+        comment.delete()
+
+    # delete flags associated with post
+    flags = Flag.objects.filter(post=instance.id)
+    for flag in flags:
+        flag.delete()
+
 
 class Comment(models.Model):
     """
@@ -34,6 +44,7 @@ class Comment(models.Model):
     post = models.ForeignKey(Post, related_name='comments')
     created = models.DateTimeField(auto_now_add=True)
     content = models.CharField(max_length=200)
+    client_secret = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
 
     class Meta:
         unique_together = ('post', 'created')

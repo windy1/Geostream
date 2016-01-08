@@ -24,6 +24,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -91,7 +92,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             throw new RuntimeException("PostDetailActivity started with null Post");
 
         // see if we have the client secret for this post, okay if not
-        clientSecret = G.app.secrets.getString(Integer.toString(post.getId()), null);
+        clientSecret = G.app.postSecrets.getString(Integer.toString(post.getId()), null);
         if (clientSecret != null) {
             G.i("This device is the owner of the Post");
             G.i("  client_secret=\"" + clientSecret + "\"");
@@ -210,7 +211,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             post.delete(this, clientSecret, (error) -> E.internal(this, error));
         } catch (IOException e) {
             e.printStackTrace();
-            E.discard(this);
+            E.deletePost(this);
             return;
         }
 
@@ -585,7 +586,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
      * Represents the comments section.
      */
     public static class CommentsFragment extends Fragment implements View.OnClickListener,
-            SwipeRefreshLayout.OnRefreshListener {
+            SwipeRefreshLayout.OnRefreshListener, AdapterView.OnItemLongClickListener {
         /**
          * {@link Post}: The post of the activity.
          */
@@ -594,6 +595,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         private View view;
         private CommentAdapter adapter;
         private Post post;
+        private ListView listView;
         private SwipeRefreshLayout swipeLayout; // ListView container that handles refreshing
 
         @Override
@@ -609,7 +611,8 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
             // add comments to list view
             adapter = new CommentAdapter(getContext(), new ArrayList<>(post.getComments()));
-            ListView listView = (ListView) view.findViewById(R.id.list_comments);
+            listView = (ListView) view.findViewById(R.id.list_comments);
+            listView.setOnItemLongClickListener(this);
             listView.setAdapter(adapter);
 
             // initialize refresh
@@ -655,15 +658,30 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             hideKeyboard();
         }
 
-        private void hideKeyboard() {
-            // hides the virtual keyboard
-            InputMethodManager in = (InputMethodManager) getActivity()
-                    .getSystemService(Context.INPUT_METHOD_SERVICE);
-            in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+        @Override
+        public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+            // called when a comment is "long clicked"
+
+            Comment comment = (Comment) listView.getItemAtPosition(position);
+            String clientSecret
+                    = G.app.commentSecrets.getString(Integer.toString(comment.getId()), null);
+            if (clientSecret == null)
+                showReportDialog();
+            else
+                showDeleteDialog(comment, clientSecret);
+
+            return true;
         }
 
         @Override
         public void onRefresh() {
+            refresh();
+        }
+
+        /**
+         * Refreshes the comments within the fragment from the server.
+         */
+        public void refresh() {
             // retrieve new comments from the server and update the adapter
             Context c = getContext();
             new Handler().post(() -> {
@@ -678,6 +696,44 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                 adapter.addAll(post.getComments());
                 swipeLayout.setRefreshing(false);
             });
+        }
+
+        private void showReportDialog() {
+            new AlertDialog.Builder(getContext())
+                    .setTitle(R.string.title_report)
+                    .setItems(R.array.report_reasons, (d, w) -> {
+
+                    })
+                    .show();
+
+        }
+
+        private void showDeleteDialog(Comment comment, String clientSecret) {
+            Context c = getContext();
+            new AlertDialog.Builder(c)
+                    .setTitle(R.string.title_delete_comment)
+                    .setMessage(R.string.prompt_confirm_delete)
+                    .setPositiveButton(R.string.action_delete, (d, w) -> {
+                        try {
+                            comment.delete(c, clientSecret,
+                                    e -> E.internal(getActivity(), e));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            E.deleteComment(c);
+                        }
+
+                        refresh();
+                        d.dismiss();
+                    })
+                    .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
+                    .show();
+        }
+
+        private void hideKeyboard() {
+            // hides the virtual keyboard
+            InputMethodManager in = (InputMethodManager) getActivity()
+                    .getSystemService(Context.INPUT_METHOD_SERVICE);
+            in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
         }
     }
 }

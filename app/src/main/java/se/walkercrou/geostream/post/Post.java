@@ -327,7 +327,7 @@ public class Post extends Resource implements Parcelable {
         // the client secret is only returned on initial post creation
         String clientSecret = obj.optString(PARAM_CLIENT_SECRET, null);
         if (clientSecret != null)
-            G.app.secrets.edit().putString(Integer.toString(id), clientSecret).commit();
+            G.app.postSecrets.edit().putString(Integer.toString(id), clientSecret).commit();
 
         return post;
     }

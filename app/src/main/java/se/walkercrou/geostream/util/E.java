@@ -72,9 +72,16 @@ public final class E {
      * @param c context
      * @return alert dialog
      */
-    public static AlertDialog discard(Context c) {
+    public static AlertDialog deletePost(Context c) {
         G.e("could not discard post");
         return builder(c, R.string.error_discard)
+                .setPositiveButton(R.string.action_ok, (d, w) -> {})
+                .create();
+    }
+
+    public static AlertDialog deleteComment(Context c) {
+        G.e("could not delete comment");
+        return builder(c, R.string.error_delete_comment)
                 .setPositiveButton(R.string.action_ok, (d, w) -> {})
                 .create();
     }
