@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch.dispatcher import receiver
 import uuid
 
 
@@ -17,6 +19,11 @@ class Post(models.Model):
 
     class Meta:
         ordering = ('created',)
+
+
+@receiver(pre_delete, sender=Post)
+def post_delete(sender, instance, **kwargs):
+    instance.media_file.delete(False)
 
 
 class Comment(models.Model):
