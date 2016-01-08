@@ -62,6 +62,27 @@ public class Post extends Resource implements Parcelable {
      * Date: The date-time that this post was created.
      */
     public static final String PARAM_CREATED = "created";
+    /**
+     * Float: The lower latitude coordinate for retrieving posts within a range.
+     */
+    public static final String PARAM_FROM_LAT = "fromLat";
+    /**
+     * The upper latitude coordinate for retrieving posts within a range.
+     */
+    public static final String PARAM_TO_LAT = "toLat";
+    /**
+     * The lower longitude coordinate for retrieving posts within a range.
+     */
+    public static final String PARAM_FROM_LNG = "fromLng";
+    /**
+     * The upper latitude coordinate for retrieving posts within a range.
+     */
+    public static final String PARAM_TO_LNG = "toLng";
+
+    /**
+     * API method that retrieve posts within a specified range.
+     */
+    public static final String METHOD_RANGE = "range";
 
     /**
      * What we tell the server to name the file. Absolutely arbitrary. May also be renamed by the
@@ -201,14 +222,8 @@ public class Post extends Resource implements Parcelable {
                 = new ResourceDetailRequest<>(c, Post.class, Resource.POSTS, id);
         ResourceResponse<Post> response = request.sendInBackground();
 
-        // check for error
-        if (response == null) {
-            callback.onError(null);
+        if (!ResourceResponse.check(response, callback))
             return;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return;
-        }
 
         this.comments = response.get().comments;
     }
@@ -221,16 +236,8 @@ public class Post extends Resource implements Parcelable {
         ResourceDeleteRequest<Post> request
                 = new ResourceDeleteRequest<>(c, Post.class, Resource.POSTS, id, clientSecret);
         ResourceResponse<Post> response = request.sendInBackground();
+        return ResourceResponse.check(response, callback);
 
-        if (response == null) {
-            callback.onError(null);
-            return false;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -252,29 +259,38 @@ public class Post extends Resource implements Parcelable {
                 .set(PARAM_MEDIA_FILE, data);
         ResourceResponse<Post> response = request.sendInBackground();
 
-        G.d("response = " + response);
+        G.d(response);
 
-        // check server response
-        if (response == null) {
-            callback.onError(null);
+        if (!ResourceResponse.check(response, callback))
             return null;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return null;
-        }
-
         return response.get();
     }
 
     /**
-     * Returns a list of all the Posts on the server that are near the specified location.
+     * Returns a list of Posts within the specified range.
      *
-     * @param location to get posts around
-     * @return list of posts near location
+     * @param c context
+     * @param fromLat lower latitude
+     * @param toLat upper latitude
+     * @param fromLng lower longitude
+     * @param toLng upper longitude
+     * @param callback in case of error
+     * @return list of posts within range
+     * @throws IOException
      */
-    public static List<Post> nearby(Location location, ErrorCallback callback) {
-        // TODO: Implement
-        return null;
+    public static List<Post> range(Context c, double fromLat, double toLat, double fromLng,
+                                   double toLng, ErrorCallback callback) throws IOException {
+        // send request to server
+        ResourceListRequest<Post> request
+                = new ResourceListRequest<>(c, Post.class, Resource.POSTS, "range");
+        request.set(PARAM_FROM_LAT, fromLat)
+                .set(PARAM_TO_LAT, toLat)
+                .set(PARAM_FROM_LNG, fromLng)
+                .set(PARAM_TO_LNG, toLng);
+        ResourceResponse<Post> response = request.sendInBackground();
+        if (!ResourceResponse.check(response, callback))
+            return null;
+        return response.getList();
     }
 
     /**
@@ -288,16 +304,8 @@ public class Post extends Resource implements Parcelable {
         ResourceResponse<Post> response = new ResourceListRequest<>(c, Post.class, Resource.POSTS)
                 .sendInBackground();
         G.d(response);
-
-        // read response
-        if (response == null) {
-            callback.onError(null);
+        if (!ResourceResponse.check(response, callback))
             return null;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return null;
-        }
-
         return response.getList();
     }
 

@@ -25,6 +25,7 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.VisibleRegion;
 import com.melnykov.fab.FloatingActionButton;
 
 import java.io.IOException;
@@ -140,6 +141,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
     public void onLocationChanged(Location location) {
         if (map.getCameraPosition().zoom == MIN_MAP_ZOOM)
             centerMapOnLocation(location);
+        refreshInBackground();
     }
 
     @Override
@@ -185,14 +187,14 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
         map.setMyLocationEnabled(true);
 
         centerMapOnLocation(location);
-        refresh(); // place posts on map
+        refreshWithDialog(); // place posts on map
 
         G.i("Map initialized.");
     }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        refresh(); // refresh map to reflect any changes
+        refreshWithDialog(); // refresh map to reflect any changes
         if (!posts.containsKey(marker)) {
             Toast.makeText(this, R.string.error_post_no_longer_exists, Toast.LENGTH_SHORT).show();
             return true;
@@ -213,20 +215,38 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
      * Show dialog while refreshing the posts on the map to reflect any new posts or deleted posts
      * on the server.
      */
-    public void refresh() {
+    public void refreshWithDialog() {
         progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
                 getString(R.string.prompt_get_resource), true); // show dialog
-        new Thread(this::_refresh).start(); // start refresh task in background
+        refreshInBackground();
     }
 
-    private void _refresh() {
-        // get post list from server
+    /**
+     * Refreshes the map in a background thread.
+     */
+    public void refreshInBackground() {
+        VisibleRegion visibleRegion = map.getProjection().getVisibleRegion();
+        new Thread(() -> refresh(visibleRegion)).start();
+    }
+
+    private void refresh(VisibleRegion visibleRegion) {
+
+        // determine range of posts to retrieve
+        LatLng topLeftCorner = visibleRegion.farLeft;
+        LatLng bottomRightCorner = visibleRegion.nearRight;
+
+        double fromLat = Math.min(topLeftCorner.latitude, bottomRightCorner.latitude);
+        double toLat = Math.max(topLeftCorner.latitude, bottomRightCorner.latitude);
+        double fromLng = Math.min(topLeftCorner.longitude, bottomRightCorner.longitude);
+        double toLng = Math.max(topLeftCorner.longitude, bottomRightCorner.longitude);
+
+        // get posts within visible range from server
         List<Post> newPosts;
         try {
-            newPosts = Post.all(this, (error) -> E.internal(this, error));
+            newPosts = Post.range(this, fromLat, toLat, fromLng, toLng, e -> E.internal(this, e));
         } catch (IOException e) {
             e.printStackTrace();
-            E.connection(this, (d, w) -> refresh());
+            handler.post(() -> E.connection(this, (d, w) -> refreshWithDialog()));
             return;
         }
 
@@ -285,7 +305,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
     public void refresh(View view) {
         // called when the refresh FAB is clicked
         centerMapOnLocation(locationApi.getLastLocation());
-        refresh();
+        refreshWithDialog();
     }
 
     public void openCamera(View view) {

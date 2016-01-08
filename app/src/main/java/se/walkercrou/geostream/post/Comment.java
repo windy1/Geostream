@@ -95,17 +95,7 @@ public class Comment extends Resource implements Parcelable {
         ResourceDeleteRequest<Comment> request = new ResourceDeleteRequest<>(c, Comment.class,
                 Resource.COMMENTS, id, clientSecret);
         ResourceResponse<Comment> response = request.sendInBackground();
-
-        // check response
-        if (response == null) {
-            callback.onError(null);
-            return false;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return false;
-        }
-
-        return true;
+        return ResourceResponse.check(response, callback);
     }
 
     /**
@@ -126,14 +116,8 @@ public class Comment extends Resource implements Parcelable {
         request.set(PARAM_POST, post.getId()).set(PARAM_CONTENT, content);
         ResourceResponse<Comment> response = request.sendInBackground();
 
-        // check for error
-        if (response == null) {
-            callback.onError(null);
+        if (!ResourceResponse.check(response, callback))
             return null;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return null;
-        }
 
         // create comment and add it to the post
         Comment comment = response.get();

@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from .models import Post, Comment, Flag
 from .serializers import PostSerializer, CommentSerializer, FlagSerializer
 from rest_framework import status, permissions
+from rest_framework.decorators import list_route
 from rest_framework.response import Response
 from django.utils import timezone
 
@@ -44,6 +45,30 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     http_method_names = ['get', 'post', 'head', 'delete']
     permission_classes = (ClientSecretPermission, )
+
+    @list_route()
+    def range(self, request):
+        data = request.query_params
+        print(str(data))
+        # make range parameters are present
+        if 'fromLat' not in data or 'toLat' not in data or 'fromLng' not in data or 'toLng' not in data:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        print('DEBUG2')
+
+        fromLat = float(data['fromLat'])
+        toLat = float(data['toLat'])
+        fromLng = float(data['fromLng'])
+        toLng = float(data['toLng'])
+
+        posts = Post.objects.all()
+        inRange = []
+        for post in posts:
+            if post.lat >= fromLat and post.lat <= toLat and post.lng >= fromLng and post.lng <= toLng:
+                inRange.append(post)
+
+        serializer = self.get_serializer(inRange, many=True)
+        return Response(serializer.data)
 
     def list(self, request):
         # delete expired posts

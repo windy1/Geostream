@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
+import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.util.G;
 
@@ -116,5 +117,24 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
         } catch (JSONException e) {
             return super.toString();
         }
+    }
+
+    /**
+     * Checks if the specified response is not null and doesn't have an error. Returns true if no
+     * error.
+     *
+     * @param response to check
+     * @param callback in case of error
+     * @return true if no error
+     */
+    public static boolean check(ResourceResponse<?> response, ErrorCallback callback) {
+        if (response == null) {
+            callback.onError(null);
+            return false;
+        } else if (response.isError()) {
+            callback.onError(response.getErrorDetail());
+            return false;
+        }
+        return true;
     }
 }

@@ -15,6 +15,9 @@ import static com.google.android.gms.common.api.GoogleApiClient.Builder;
 import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 
+/**
+ * A wrapper class for handling the location services API.
+ */
 public class LocationApi {
     private final Activity a;
     private GoogleApiClient client;
@@ -23,6 +26,13 @@ public class LocationApi {
         this.a = a;
     }
 
+    /**
+     * Ensures that we have permission for location services and connects to the API.
+     *
+     * @param callback1 success callback
+     * @param callback2 failed callback
+     * @return true if had permission
+     */
     public boolean connect(ConnectionCallbacks callback1, OnConnectionFailedListener callback2) {
         // check for location permission
         if (ActivityCompat.checkSelfPermission(a, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -40,15 +50,29 @@ public class LocationApi {
         return true;
     }
 
+    /**
+     * Disconnects from the API.
+     */
     public void disconnect() {
         if (client != null)
             client.disconnect();
     }
 
+    /**
+     * Returns the last known location of the device.
+     *
+     * @return last location
+     */
     public Location getLastLocation() {
         return LocationServices.FusedLocationApi.getLastLocation(client);
     }
 
+    /**
+     * Notifies the API that it should start sending location updates to the specified
+     * {@link LocationListener}.
+     *
+     * @param listener to send updates to
+     */
     public void startLocationUpdates(LocationListener listener) {
         LocationRequest request = new LocationRequest();
         request.setInterval(5000);

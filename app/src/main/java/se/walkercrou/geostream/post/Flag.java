@@ -82,15 +82,8 @@ public class Flag extends Resource {
         request.set(PARAM_POST, post.getId()).set(PARAM_REASON, reason.name);
         ResourceResponse<Flag> response = request.sendInBackground();
 
-        // check for error
-        if (response == null) {
-            callback.onError(null);
+        if (!ResourceResponse.check(response, callback))
             return null;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return null;
-        }
-
         return response.get();
     }
 
