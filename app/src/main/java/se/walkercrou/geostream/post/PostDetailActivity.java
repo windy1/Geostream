@@ -353,6 +353,11 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             if (clientSecret == null)
                 // hide "discard" button if we don't have a client secret
                 menu.getItem(ACTION_DISCARD).setVisible(false);
+            else {
+                // hide the "flag" and "hide" buttons if we do
+                menu.getItem(ACTION_REPORT).setVisible(false);
+                menu.getItem(ACTION_HIDE).setVisible(false);
+            }
         }
 
         /**

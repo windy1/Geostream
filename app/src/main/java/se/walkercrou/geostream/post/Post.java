@@ -47,9 +47,9 @@ public class Post extends Resource implements Parcelable {
      */
     public static final String PARAM_MEDIA_FILE = "media_file";
     /**
-     * Boolean: True if this post contains a video.
+     * Integer: The amount of hours this Post should be available.
      */
-    public static final String PARAM_IS_VIDEO = "is_video";
+    public static final String PARAM_LIFETIME = "lifetime";
     /**
      * String: The secret returned by the server on post creation, used for deletion.
      */
@@ -241,15 +241,15 @@ public class Post extends Resource implements Parcelable {
      * @param callback error callback
      * @return new post object
      */
-    public static Post create(Context c, Location location, MediaData data,
+    public static Post create(Context c, Location location, int lifetime, MediaData data,
                               ErrorCallback callback) throws IOException {
         // post to server
         ResourceCreateRequest<Post> request
                 = new ResourceCreateRequest<>(c, Post.class, Resource.POSTS);
         request.set(PARAM_LAT, location.getLatitude())
                 .set(PARAM_LNG, location.getLongitude())
-                .set(PARAM_MEDIA_FILE, data)
-                .set(PARAM_IS_VIDEO, false);
+                .set(PARAM_LIFETIME, lifetime)
+                .set(PARAM_MEDIA_FILE, data);
         ResourceResponse<Post> response = request.sendInBackground();
 
         G.d("response = " + response);

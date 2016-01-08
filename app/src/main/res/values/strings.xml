@@ -78,4 +78,6 @@
     <string name="prompt_location_restored">Connection to location services restored!</string>
     <string name="action_hide">Hide</string>
     <string name="prompt_confirm_hide">Are you sure you want to hide this? This cannot be undone.</string>
+    <string name="title_lifetime">Post lifetime</string>
+    <string name="prompt_lifetime">How many hours should this post be available?</string>
 </resources>

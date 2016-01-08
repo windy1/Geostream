@@ -9,15 +9,16 @@ import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.FrameLayout;
+import android.widget.NumberPicker;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.melnykov.fab.FloatingActionButton;
 
 import java.io.File;
@@ -35,7 +36,8 @@ import static android.hardware.Camera.PictureCallback;
 import static android.hardware.Camera.PreviewCallback;
 import static android.hardware.Camera.ShutterCallback;
 import static android.hardware.Camera.open;
-import static com.google.android.gms.common.api.GoogleApiClient.*;
+import static com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import static com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import static se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaData;
 
 /**
@@ -64,6 +66,10 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     private ProgressDialog progressDialog;
     private View cancelBtn;
     private FloatingActionButton recordBtn, sendBtn;
+    private View flashOnBtn, flashOffBtn;
+    private boolean flashOn = false;
+    private View cameraFrontBtn, cameraRearBtn;
+    private boolean cameraFacingFront = false;
 
     // location stuff
     private LocationApi locationApi;
@@ -81,6 +87,12 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         cancelBtn = findViewById(R.id.btn_cancel);
         sendBtn = (FloatingActionButton) findViewById(R.id.fab_send);
         sendBtn.hide(false); // hide the send button without an animation at start
+
+        flashOnBtn = findViewById(R.id.btn_flash_on);
+        flashOffBtn = findViewById(R.id.btn_flash_off);
+
+        cameraFrontBtn = findViewById(R.id.btn_camera_front);
+        cameraRearBtn = findViewById(R.id.btn_camera_rear);
 
         setupRecordButton();
 
@@ -183,10 +195,40 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         else {
             // start progress dialog
             preview.stopPlayback();
-            progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
-                    getString(R.string.prompt_creating_post), true);
-            new Thread(this::sendPost).start(); // send post in background
+
+            // configure number picker
+            LayoutInflater inflater = LayoutInflater.from(this);
+            NumberPicker np = (NumberPicker) inflater.inflate(R.layout.number_picker, null);
+            np.setMaxValue(24);
+            np.setMinValue(1);
+            np.setValue(24);
+            np.setWrapSelectorWheel(false);
+
+            // show number picker dialog
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.title_lifetime)
+                    .setMessage(R.string.prompt_lifetime)
+                    .setView(np)
+                    .setPositiveButton(R.string.action_ok, (dialog, which) -> {
+                        // send the post
+                        dialog.dismiss();
+                        progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
+                                getString(R.string.prompt_creating_post), true);
+                        new Thread(() -> sendPost(np.getValue())).start();
+                    })
+                    .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
+                    .show();
         }
+    }
+
+    public void toggleFlash(View view) {
+        flashOn = !flashOn;
+        showFlashButton();
+    }
+
+    public void switchCameraDirection(View view) {
+        cameraFacingFront = !cameraFacingFront;
+        showSwitchCameraButton();
     }
 
     // ---------------------------
@@ -204,7 +246,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
                 && recording && stopRecording());
     }
 
-    private void sendPost() {
+    private void sendPost(int lifetime) {
         // construct MediaData object
         MediaData data;
         if (outputFile != null && outputFile.exists())
@@ -215,7 +257,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         // try to create post
         Post post;
         try {
-            post = Post.create(this, locationApi.getLastLocation(), data,
+            post = Post.create(this, locationApi.getLastLocation(), lifetime, data,
                     (error) -> E.postSend(this).show());
         } catch (IOException e) {
             E.postSend(this).show();
@@ -235,6 +277,28 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         sendBtn.hide();
         recordBtn.show();
         cancelBtn.setVisibility(View.GONE);
+        showFlashButton();
+        showSwitchCameraButton();
+    }
+
+    private void showFlashButton() {
+        if (flashOn) {
+            flashOnBtn.setVisibility(View.VISIBLE);
+            flashOffBtn.setVisibility(View.INVISIBLE);
+        } else {
+            flashOffBtn.setVisibility(View.VISIBLE);
+            flashOnBtn.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void showSwitchCameraButton() {
+        if (cameraFacingFront) {
+            cameraFrontBtn.setVisibility(View.VISIBLE);
+            cameraRearBtn.setVisibility(View.INVISIBLE);
+        } else {
+            cameraRearBtn.setVisibility(View.VISIBLE);
+            cameraFrontBtn.setVisibility(View.INVISIBLE);
+        }
     }
 
     private void showPlaybackButtons() {
@@ -243,6 +307,10 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         recordBtn.hide();
         sendBtn.show();
         cancelBtn.setVisibility(View.VISIBLE);
+        flashOnBtn.setVisibility(View.INVISIBLE);
+        flashOffBtn.setVisibility(View.INVISIBLE);
+        cameraFrontBtn.setVisibility(View.INVISIBLE);
+        cameraRearBtn.setVisibility(View.INVISIBLE);
     }
 
     private void setupCamera() {

@@ -3,10 +3,16 @@ import uuid
 
 
 class Post(models.Model):
+    """
+    Represents a Post uploaded by a client. Posts consist of the date of creation, latitude / longitude coordinates of
+    where the post was created, either a video or image file of the media that was captured, the "lifetime" of the post
+    in hours, and a "client secret" that allows the client to make modifications to the post in the future.
+    """
     created = models.DateTimeField(auto_now_add=True)
     lat = models.FloatField()
     lng = models.FloatField()
     media_file = models.FileField(upload_to='posts')
+    lifetime = models.IntegerField()
     client_secret = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
 
     class Meta:
@@ -14,6 +20,10 @@ class Post(models.Model):
 
 
 class Comment(models.Model):
+    """
+    Represents a comment that a client has made on an existing Post. Comments consist of a reference to the Post that
+    was commented on, the creation date, and the actual content of the comment.
+    """
     post = models.ForeignKey(Post, related_name='comments')
     created = models.DateTimeField(auto_now_add=True)
     content = models.CharField(max_length=200)
@@ -24,6 +34,10 @@ class Comment(models.Model):
 
 
 class Flag(models.Model):
+    """
+    Represents a "report flag" on an existing post that requires moderator mediation. Flags consist of a reference to
+    the Post that was reported, the creation date, and the reason for reporting.
+    """
     REASON_INAPPROPRIATE_CONTENT = 'IC'
     REASON_PRIVACY_VIOLATION = 'PV'
     REASON_VIOLENCE_OR_BULLYING = 'VB'

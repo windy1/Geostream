@@ -3,14 +3,27 @@ from .models import Post, Comment, Flag
 from .serializers import PostSerializer, CommentSerializer, FlagSerializer
 from rest_framework import status
 from rest_framework.response import Response
+from django.utils import timezone
 
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
+    def list(self, request):
+        # delete expired posts
+        posts = Post.objects.all()
+        for post in posts:
+            now = timezone.now()
+            dt = now - post.created  # timedelta between the creation date of the post and now
+            mins = divmod(dt.total_seconds(), 60)  # (minutes, seconds)
+            hours = mins[0] / 60
+            if hours >= post.lifetime:
+                post.delete()
+        return viewsets.ModelViewSet.list(self, request)  # after deleting old posts, pass to super method
+
     def create(self, request):
-        # hijack create method to include the client secret on initial creation
+        # include the 'client_secret' within the response only on creation
         serializer = PostSerializer(data=request.data)
         if (serializer.is_valid()):
             post = serializer.save()
@@ -21,7 +34,8 @@ class PostViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        # hijack destroy method to make sure that the request include the client secret
+        # make sure that the 'client_secret' has been provided
+        # TODO: replace with custom permission
         post = self.get_object()
         if 'HTTP_CLIENTSECRET' in request.META and str(request.META['HTTP_CLIENTSECRET']) == str(post.client_secret):
             return viewsets.ModelViewSet.destroy(self, request, pk)

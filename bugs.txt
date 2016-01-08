@@ -1,3 +1,3 @@
 app crashes on launch if no internet connection
 trouble reconnecting to location services if location is lost
-configure server permissions
+app doesn't handling pausing and resuming well
