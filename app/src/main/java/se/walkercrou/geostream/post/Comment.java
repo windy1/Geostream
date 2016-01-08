@@ -80,12 +80,23 @@ public class Comment extends Resource implements Parcelable {
         return created;
     }
 
+    /**
+     * Attempts to delete this Comment on the server.
+     *
+     * @param c context
+     * @param clientSecret to send to server for authentication
+     * @param callback in case of error
+     * @return true if deleted successfully
+     * @throws IOException
+     */
     public boolean delete(Context c, String clientSecret, ErrorCallback callback)
             throws IOException {
+        // send request
         ResourceDeleteRequest<Comment> request = new ResourceDeleteRequest<>(c, Comment.class,
                 Resource.COMMENTS, id, clientSecret);
         ResourceResponse<Comment> response = request.sendInBackground();
 
+        // check response
         if (response == null) {
             callback.onError(null);
             return false;

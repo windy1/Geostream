@@ -79,6 +79,12 @@ public final class E {
                 .create();
     }
 
+    /**
+     * Returns a dialog to display when an error occurs while attempting to delete a comment.
+     *
+     * @param c context
+     * @return alert dialog
+     */
     public static AlertDialog deleteComment(Context c) {
         G.e("could not delete comment");
         return builder(c, R.string.error_delete_comment)

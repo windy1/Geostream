@@ -251,6 +251,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                 .setItems(R.array.report_reasons, (dialog, which) -> {
                     reportPost(Flag.Reason.values()[which]);
                 })
+                .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
                 .show();
     }
 
@@ -702,8 +703,9 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             new AlertDialog.Builder(getContext())
                     .setTitle(R.string.title_report)
                     .setItems(R.array.report_reasons, (d, w) -> {
-
+                        // TODO: report comment to server
                     })
+                    .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
                     .show();
 
         }
@@ -714,6 +716,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                     .setTitle(R.string.title_delete_comment)
                     .setMessage(R.string.prompt_confirm_delete)
                     .setPositiveButton(R.string.action_delete, (d, w) -> {
+                        // delete the comment on the server
                         try {
                             comment.delete(c, clientSecret,
                                     e -> E.internal(getActivity(), e));
@@ -722,7 +725,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                             E.deleteComment(c);
                         }
 
-                        refresh();
+                        refresh(); // refresh the list view
                         d.dismiss();
                     })
                     .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
