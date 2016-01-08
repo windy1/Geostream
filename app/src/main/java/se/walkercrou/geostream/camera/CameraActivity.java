@@ -193,31 +193,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
         if (!G.isConnectedToNetwork(this))
             E.connection(this, (dialog, which) -> sendPost(null)).show();
         else {
-            // start progress dialog
             preview.stopPlayback();
-
-            // configure number picker
-            LayoutInflater inflater = LayoutInflater.from(this);
-            NumberPicker np = (NumberPicker) inflater.inflate(R.layout.number_picker, null);
-            np.setMaxValue(24);
-            np.setMinValue(1);
-            np.setValue(24);
-            np.setWrapSelectorWheel(false);
-
-            // show number picker dialog
-            new AlertDialog.Builder(this)
-                    .setTitle(R.string.title_lifetime)
-                    .setMessage(R.string.prompt_lifetime)
-                    .setView(np)
-                    .setPositiveButton(R.string.action_ok, (dialog, which) -> {
-                        // send the post
-                        dialog.dismiss();
-                        progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
-                                getString(R.string.prompt_creating_post), true);
-                        new Thread(() -> sendPost(np.getValue())).start();
-                    })
-                    .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
-                    .show();
+            showLifetimeDialog();
         }
     }
 
@@ -232,6 +209,31 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     }
 
     // ---------------------------
+
+    private void showLifetimeDialog() {
+        // configure number picker
+        LayoutInflater inflater = LayoutInflater.from(this);
+        NumberPicker np = (NumberPicker) inflater.inflate(R.layout.number_picker, null);
+        np.setMaxValue(24);
+        np.setMinValue(1);
+        np.setValue(24);
+        np.setWrapSelectorWheel(false);
+
+        // show number picker dialog
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.title_lifetime)
+                .setMessage(R.string.prompt_lifetime)
+                .setView(np)
+                .setPositiveButton(R.string.action_ok, (dialog, which) -> {
+                    // send the post
+                    dialog.dismiss();
+                    progressDialog = ProgressDialog.show(this, getString(R.string.title_wait),
+                            getString(R.string.prompt_creating_post), true);
+                    new Thread(() -> sendPost(np.getValue())).start();
+                })
+                .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss())
+                .show();
+    }
 
     private void setupRecordButton() {
         // add listeners to record button
