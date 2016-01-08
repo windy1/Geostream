@@ -107,3 +107,9 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = '/Users/walker/Development/geostream-media'
 
 MEDIA_URL = '/media/'
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [],
+}

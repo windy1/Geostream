@@ -23,7 +23,7 @@ class Post(models.Model):
 
 @receiver(pre_delete, sender=Post)
 def post_delete(sender, instance, **kwargs):
-    instance.media_file.delete(False)
+    instance.media_file.delete(False)  # delete the models media_file when a Post is deleted
 
 
 class Comment(models.Model):

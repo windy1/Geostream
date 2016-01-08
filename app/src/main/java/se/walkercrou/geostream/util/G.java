@@ -46,7 +46,7 @@ public final class G {
     public final String name; // application name
     public final String serverUrl; // location of server
     public final SharedPreferences secrets; // collection of client_secrets to edit posts
-    public final SharedPreferences hidden;
+    public final SharedPreferences hidden; // posts that are hidden from the client
     public boolean splashed = false; // true if splash screen has been displayed
 
     private G(Context context) {
