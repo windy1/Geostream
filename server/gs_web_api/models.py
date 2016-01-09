@@ -25,6 +25,9 @@ class Post(models.Model):
 
 @receiver(pre_delete, sender=Post)
 def post_delete(sender, instance, **kwargs):
+    """
+    Called before a Post is deleted. Cleans up the media_file, deletes associated comments and flags.
+    """
     instance.media_file.delete(False)  # delete the models media_file when a Post is deleted
 
     # delete comments associated with post
@@ -56,12 +59,19 @@ class Comment(models.Model):
 
 @receiver(pre_delete, sender=Comment)
 def comment_delete(sender, instance, **kwargs):
+    """
+    Called before a Comment is deleted. Deletes associated flags.
+    """
     flags = Flag.objects.filter(resource_type=Flag.RESOURCE_TYPE_COMMENT).filter(resource_id=instance.id)
     for flag in flags:
         flag.delete()
 
 
 class Flag(models.Model):
+    """
+    Represents a flag as a result of a resource being reported by a client. A flag consists of the type of resource
+    that has been reported, the id of said resource, a creation date, and the reason for the resource being reported.
+    """
     REASON_INAPPROPRIATE_CONTENT = 'IC'
     REASON_PRIVACY_VIOLATION = 'PV'
     REASON_VIOLENCE_OR_BULLYING = 'VB'

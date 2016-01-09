@@ -48,6 +48,9 @@ class PostViewSet(viewsets.ModelViewSet):
 
     @list_route()
     def range(self, request):
+        """
+        Returns a list view of the posts within a specified lat/lng range.
+        """
         data = request.query_params
         # make range parameters are present
         if 'fromLat' not in data or 'toLat' not in data or 'fromLng' not in data or 'toLng' not in data:
