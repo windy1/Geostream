@@ -13,9 +13,9 @@ class Post(models.Model):
     in hours, and a "client secret" that allows the client to make modifications to the post in the future.
     """
     created = models.DateTimeField(auto_now_add=True)  # date post was created
-    lat = models.FloatField()  # latitudinal coordinate
-    lng = models.FloatField()  # longitudinal coordinate
-    media_file = models.FileField(upload_to='posts')  # file containing content
+    lat = models.FloatField(validators=[MinValueValidator(-90), MaxValueValidator(90)])  # latitudinal coordinate
+    lng = models.FloatField(validators=[MinValueValidator(-180), MaxValueValidator(180)])  # longitudinal coordinate
+    media_file = models.FileField(upload_to='posts')
     lifetime = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(24)])  # post lifetime in hours
     # returned on creation for deletion
     client_secret = models.UUIDField(primary_key=False, default=uuid.uuid4, editable=False)
