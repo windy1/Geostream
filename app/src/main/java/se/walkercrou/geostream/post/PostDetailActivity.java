@@ -85,6 +85,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         super.onCreate(b);
         requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY); // as to not distort the media
         setContentView(R.layout.activity_post_detail);
+        G.init(this);
 
         // get the passed post object
         post = getIntent().getParcelableExtra(EXTRA_POST);
@@ -184,7 +185,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             post.flag(this, reason, (error) -> E.internal(this, error));
         } catch (IOException e) {
             e.printStackTrace();
-            E.report(this);
+            handler.post(() -> E.reportPost(this));
             return;
         }
 
@@ -218,6 +219,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         if (progressDialog != null)
             progressDialog.dismiss();
 
+        G.d("Post deleted, starting MapActivity");
         startActivity(new Intent(this, MapActivity.class));
     }
 
@@ -662,15 +664,14 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         @Override
         public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
             // called when a comment is "long clicked"
-
             Comment comment = (Comment) listView.getItemAtPosition(position);
             String clientSecret
                     = G.app.commentSecrets.getString(Integer.toString(comment.getId()), null);
+            // show delete dialog if owner, report dialog otherwise
             if (clientSecret == null)
-                showReportDialog();
+                showReportDialog(comment);
             else
                 showDeleteDialog(comment, clientSecret);
-
             return true;
         }
 
@@ -693,17 +694,23 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                             Toast.LENGTH_LONG).show();
                     return;
                 }
+
                 adapter.clear();
-                adapter.addAll(post.getComments());
+                for (Comment comment : post.getComments()) {
+                    if (!comment.isHidden())
+                        adapter.add(comment);
+                }
                 swipeLayout.setRefreshing(false);
             });
         }
 
-        private void showReportDialog() {
-            new AlertDialog.Builder(getContext())
+        private void showReportDialog(Comment comment) {
+            Context c = getContext();
+            new AlertDialog.Builder(c)
                     .setTitle(R.string.title_report)
                     .setItems(R.array.report_reasons, (d, w) -> {
-                        // TODO: report comment to server
+                        Flag.Reason reason = Flag.Reason.values()[w];
+                        reportComment(comment, reason);
                     })
                     .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
                     .show();
@@ -730,6 +737,20 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                     })
                     .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
                     .show();
+        }
+
+        private void reportComment(Comment comment, Flag.Reason reason) {
+            try {
+                comment.flag(getContext(), reason, e -> E.internal(getActivity(), e));
+            } catch (IOException e) {
+                e.printStackTrace();
+                E.reportComment(getContext());
+                return;
+            }
+
+            comment.setHidden(true);
+            refresh();
+            Toast.makeText(getContext(), R.string.prompt_comment_report, Toast.LENGTH_LONG).show();
         }
 
         private void hideKeyboard() {

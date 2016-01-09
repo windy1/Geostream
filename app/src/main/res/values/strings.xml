@@ -82,4 +82,6 @@
     <string name="prompt_lifetime">How many hours should this post be available?</string>
     <string name="title_delete_comment">Delete comment</string>
     <string name="error_delete_comment">Something went wrong while deleting your comment. Please check your internet connection and try again.</string>
+    <string name="error_report_comment">Something went wrong while reporting this comment. Please check your internet connection and try again.</string>
+    <string name="prompt_comment_report">Comment reported.</string>
 </resources>

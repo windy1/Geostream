@@ -98,26 +98,19 @@ public class Post extends Resource implements Parcelable {
      */
     public static final String VIDEO_FILE_EXTENSION = "mp4";
 
-    private final int id;
+    /**
+     * Shorthand for server use.
+     */
+    public static final String TYPE_NAME = "PST";
+
     private final Location location;
     private final String fileUrl;
-    private final Date created;
     protected List<Comment> comments = new ArrayList<>();
 
     private Post(int id, Location location, String fileUrl, Date created) {
+        super(id, TYPE_NAME, created);
         this.location = location;
         this.fileUrl = fileUrl;
-        this.id = id;
-        this.created = created;
-    }
-
-    /**
-     * Returns this Post's unique ID
-     *
-     * @return post id
-     */
-    public int getId() {
-        return id;
     }
 
     /**
@@ -140,15 +133,6 @@ public class Post extends Resource implements Parcelable {
     }
 
     /**
-     * Returns the date when this post was created on the server.
-     *
-     * @return creation date
-     */
-    public Date getCreationDate() {
-        return created;
-    }
-
-    /**
      * Returns the Comments in this Post.
      *
      * @return post comments
@@ -163,7 +147,7 @@ public class Post extends Resource implements Parcelable {
      * @return true if hidden
      */
     public boolean isHidden() {
-        return G.app.hidden.getBoolean(Integer.toString(id), false);
+        return G.app.hiddenPosts.getBoolean(Integer.toString(id), false);
     }
 
     /**
@@ -172,7 +156,7 @@ public class Post extends Resource implements Parcelable {
      * @param hidden true if should hide
      */
     public void setHidden(boolean hidden) {
-        G.app.hidden.edit().putBoolean(Integer.toString(id), hidden).commit();
+        G.app.hiddenPosts.edit().putBoolean(Integer.toString(id), hidden).commit();
     }
 
     /**

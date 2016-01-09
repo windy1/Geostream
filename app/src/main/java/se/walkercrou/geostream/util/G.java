@@ -47,7 +47,8 @@ public final class G {
     public final String serverUrl; // location of server
     public final SharedPreferences postSecrets; // collection of client_secrets to edit posts
     public final SharedPreferences commentSecrets; // collection of client_secrets to edit comments
-    public final SharedPreferences hidden; // posts that are hidden from the client
+    public final SharedPreferences hiddenPosts; // posts that are hidden from the client
+    public final SharedPreferences hiddenComments; // comments that are hidden from the client
     public boolean splashed = false; // true if splash screen has been displayed
 
     private G(Context context) {
@@ -55,7 +56,8 @@ public final class G {
         serverUrl = context.getString(R.string.server_url);
         postSecrets = context.getSharedPreferences("PostSecrets", Context.MODE_PRIVATE);
         commentSecrets = context.getSharedPreferences("CommentSecrets", Context.MODE_PRIVATE);
-        hidden = context.getSharedPreferences("HiddenPosts", Context.MODE_PRIVATE);
+        hiddenPosts = context.getSharedPreferences("HiddenPosts", Context.MODE_PRIVATE);
+        hiddenComments = context.getSharedPreferences("HiddenComments", Context.MODE_PRIVATE);
     }
 
     /**

@@ -43,23 +43,16 @@ public class Comment extends Resource implements Parcelable {
      */
     public static final String PARAM_CLIENT_SECRET = "client_secret";
 
-    private final int id;
+    /**
+     * Shorthand for server use
+     */
+    public static final String TYPE_NAME = "CMT";
+
     private final String content;
-    private final Date created;
 
     private Comment(int id, String content, Date created) {
-        this.id = id;
+        super(id, TYPE_NAME, created);
         this.content = content;
-        this.created = created;
-    }
-
-    /**
-     * Returns this comments unique identifier.
-     *
-     * @return unique id
-     */
-    public int getId() {
-        return id;
     }
 
     /**
@@ -72,12 +65,35 @@ public class Comment extends Resource implements Parcelable {
     }
 
     /**
-     * Returns the date when this comment was created.
+     * Sets whether this comment should be hidden from the client.
      *
-     * @return creation date
+     * @param hidden true if should hide
      */
-    public Date getCreationDate() {
-        return created;
+    public void setHidden(boolean hidden) {
+        G.app.hiddenComments.edit().putBoolean(Integer.toString(id), hidden).commit();
+    }
+
+    /**
+     * Returns true if this comment is hidden from the client.
+     *
+     * @return true if hidden
+     */
+    public boolean isHidden() {
+        return G.app.hiddenComments.getBoolean(Integer.toString(id), false);
+    }
+
+    /**
+     * Reports this comment to the server for review for the specified
+     * {@link se.walkercrou.geostream.post.Flag.Reason}.
+     *
+     * @param c context
+     * @param reason for report
+     * @param callback in case of error
+     * @return newly created flag
+     * @throws IOException
+     */
+    public Flag flag(Context c, Flag.Reason reason, ErrorCallback callback) throws IOException {
+        return Flag.create(c, this, reason, callback);
     }
 
     /**

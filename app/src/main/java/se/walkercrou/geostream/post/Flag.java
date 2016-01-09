@@ -22,10 +22,9 @@ import se.walkercrou.geostream.util.G;
  * by moderators. If a post is flagged 5 times or more, it is taken down automatically.
  */
 public class Flag extends Resource {
-    /**
-     * Integer: {@link Post} ID that this flag belongs to.
-     */
-    public static final String PARAM_POST = "post";
+    public static final String PARAM_ID = "id";
+    public static final String PARAM_RESOURCE_TYPE = "resource_type";
+    public static final String PARAM_RESOURCE_ID = "resource_id";
     /**
      * Date: The date this flag was created.
      */
@@ -36,12 +35,16 @@ public class Flag extends Resource {
      */
     public static final String PARAM_REASON = "reason";
 
-    private final Reason reason;
-    private final Date created;
+    /**
+     * Shorthand for server use
+     */
+    public static final String TYPE_NAME = "FLG";
 
-    private Flag(Reason reason, Date created) {
+    private final Reason reason;
+
+    private Flag(int id, Reason reason, Date created) {
+        super(id, TYPE_NAME, created);
         this.reason = reason;
-        this.created = created;
     }
 
     /**
@@ -54,32 +57,25 @@ public class Flag extends Resource {
     }
 
     /**
-     * Returns the {@link Date} when this flag was created.
-     *
-     * @return creation date
-     */
-    public Date getCreationDate() {
-        return created;
-    }
-
-    /**
-     * Creates a new flag for the specified {@link Post} and sends it to the server for review. This
-     * method is protected for consistency. Use {@link Post#flag(Context, Reason, ErrorCallback)}
-     * instead.
+     * Creates a new flag for the specified {@link Resource} and sends it to the server for review.
+     * This method is protected for consistency.
      *
      * @param c context
-     * @param post to flag
+     * @param resource to flag
      * @param reason for flagging
      * @param callback in case of error
      * @return flag
      * @throws IOException
      */
-    protected static Flag create(Context c, Post post, Reason reason, ErrorCallback callback)
-            throws IOException {
+    protected static Flag create(Context c, Resource resource, Reason reason,
+                                 ErrorCallback callback) throws IOException {
         // send request to server
+        G.d("creating flag for resource: " + resource.getTypeName() + '/' + resource.getId());
         ResourceCreateRequest<Flag> request
                 = new ResourceCreateRequest<>(c, Flag.class, Resource.FLAGS);
-        request.set(PARAM_POST, post.getId()).set(PARAM_REASON, reason.name);
+        request.set(PARAM_RESOURCE_TYPE, resource.getTypeName())
+                .set(PARAM_RESOURCE_ID, resource.getId())
+                .set(PARAM_REASON, reason);
         ResourceResponse<Flag> response = request.sendInBackground();
 
         if (!ResourceResponse.check(response, callback))
@@ -96,7 +92,7 @@ public class Flag extends Resource {
      * @throws JSONException
      */
     public static Flag parse(Context c, JSONObject json) throws JSONException, ParseException {
-        return new Flag(Reason.nameMap.get(json.getString(PARAM_REASON)),
+        return new Flag(json.getInt(PARAM_ID), Reason.nameMap.get(json.getString(PARAM_REASON)),
                 G.parseDateString(json.getString(PARAM_CREATED)));
     }
 
@@ -140,6 +136,11 @@ public class Flag extends Resource {
 
         Reason(String name) {
             this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 }

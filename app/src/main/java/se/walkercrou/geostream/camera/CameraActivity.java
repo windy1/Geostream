@@ -78,6 +78,7 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        G.init(this);
 
         // hide action bar
         requestWindowFeature(Window.FEATURE_NO_TITLE);

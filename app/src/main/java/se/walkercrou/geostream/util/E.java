@@ -59,9 +59,16 @@ public final class E {
      * @param c context
      * @return alert dialog
      */
-    public static AlertDialog report(Context c) {
+    public static AlertDialog reportPost(Context c) {
         G.e("could not report post");
         return builder(c, R.string.error_report)
+                .setPositiveButton(R.string.action_ok, (d, w) -> {})
+                .create();
+    }
+
+    public static AlertDialog reportComment(Context c) {
+        G.e("could not report comment");
+        return builder(c, R.string.error_report_comment)
                 .setPositiveButton(R.string.action_ok, (d, w) -> {})
                 .create();
     }

@@ -33,7 +33,7 @@ def post_delete(sender, instance, **kwargs):
         comment.delete()
 
     # delete flags associated with post
-    flags = Flag.objects.filter(post=instance.id)
+    flags = Flag.objects.filter(resource_type=Flag.RESOURCE_TYPE_POST).filter(resource_id=instance.id)
     for flag in flags:
         flag.delete()
 
@@ -54,11 +54,14 @@ class Comment(models.Model):
         ordering = ('created',)
 
 
+@receiver(pre_delete, sender=Comment)
+def comment_delete(sender, instance, **kwargs):
+    flags = Flag.objects.filter(resource_type=Flag.RESOURCE_TYPE_COMMENT).filter(resource_id=instance.id)
+    for flag in flags:
+        flag.delete()
+
+
 class Flag(models.Model):
-    """
-    Represents a "report flag" on an existing post that requires moderator mediation. Flags consist of a reference to
-    the Post that was reported, the creation date, and the reason for reporting.
-    """
     REASON_INAPPROPRIATE_CONTENT = 'IC'
     REASON_PRIVACY_VIOLATION = 'PV'
     REASON_VIOLENCE_OR_BULLYING = 'VB'
@@ -71,7 +74,21 @@ class Flag(models.Model):
         (REASON_SPAM, 'Spam'),
     )
 
-    # TODO: Allow flags on Posts and Comments
-    post = models.ForeignKey(Post, related_name='flags')  # the post this flag belongs to
+    RESOURCE_TYPE_POST = 'PST'
+    RESOURCE_TYPE_COMMENT = 'CMT'
+
+    RESOURCE_TYPE_CHOICES = (
+        (RESOURCE_TYPE_POST, 'Post'),
+        (RESOURCE_TYPE_COMMENT, 'Comment'),
+    )
+
+    resource_type = models.CharField(max_length=3, choices=RESOURCE_TYPE_CHOICES)
+    resource_id = models.IntegerField()
     created = models.DateTimeField(auto_now_add=True)  # creation date
     reason = models.CharField(max_length=2, choices=REASON_CHOICES)  # reason for report
+
+    def get_resource(self):
+        if self.resource_type == self.RESOURCE_TYPE_POST:
+            return Post.get(pk=self.resource_id)
+        elif self.resource_type == self.RESOURCE_TYPE_COMMENT:
+            return Comment.get(pk=self.resource_id)

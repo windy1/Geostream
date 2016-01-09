@@ -5,7 +5,7 @@ from .models import Post, Comment, Flag
 class FlagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flag
-        fields = ('post', 'created', 'reason',)
+        fields = ('id', 'resource_type', 'resource_id', 'created', 'reason',)
 
 
 class CommentSerializer(serializers.ModelSerializer):
