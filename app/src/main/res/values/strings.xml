@@ -7,6 +7,8 @@
     <string name="title_confirm">Hold up!</string>
     <string name="title_wait">Please wait…</string>
     <string name="title_report">Report</string>
+    <string name="title_delete_comment">Delete comment</string>
+    <string name="title_lifetime">Post lifetime</string>
 
     <!-- Actions -->
     <string name="action_cancel">Cancel</string>
@@ -16,6 +18,7 @@
     <string name="action_delete">Delete</string>
     <string name="action_comments">Comments</string>
     <string name="action_report">Report</string>
+    <string name="action_hide">Hide</string>
 
     <!-- Errors -->
     <string name="error_no_camera">%s could not open your device\'s camera.</string>
@@ -50,6 +53,18 @@
         Something went wrong while reporting this post. Please check your internet connection and
         try again.
     </string>
+    <string name="error_delete_comment">
+        Something went wrong while deleting your comment. Please check your internet connection and
+        try again.
+    </string>
+    <string name="error_report_comment">
+        Something went wrong while reporting this comment. Please check your internet connection and
+        try again.
+    </string>
+    <string name="error_location_required">
+        %s requires location services in order to function. App will exit now.
+    </string>
+    <string name="error_lost_connection">Connection to location services lost.</string>
 
     <!-- Content descriptions -->
     <string name="description_splash">Splash screen</string>
@@ -66,22 +81,17 @@
     <string name="prompt_get_resource">…while we get that for you.</string>
     <string name="prompt_discarding_post">…while we delete that for you.</string>
     <string name="prompt_reporting_post">…while we report that for you.</string>
+    <string name="prompt_comment_report">Comment reported.</string>
+    <string name="prompt_post_report">Post reported.</string>
+    <string name="prompt_lifetime">How many hours should this post be available?</string>
+    <string name="prompt_confirm_hide">
+        Are you sure you want to hide this? This cannot be undone.
+    </string>
+    <string name="prompt_location_restored">Connection to location services restored!</string>
 
     <!-- Array values -->
     <string name="report_reason_ic">Inappropriate content</string>
     <string name="report_reason_pv">Privacy violation</string>
     <string name="report_reason_vb">Violence or Bullying</string>
     <string name="report_reason_sp">Spam</string>
-    <string name="prompt_post_report">Post reported.</string>
-    <string name="error_location_required">%s requires location services in order to function. App will exit now.</string>
-    <string name="error_lost_connection">Connection to location services lost.</string>
-    <string name="prompt_location_restored">Connection to location services restored!</string>
-    <string name="action_hide">Hide</string>
-    <string name="prompt_confirm_hide">Are you sure you want to hide this? This cannot be undone.</string>
-    <string name="title_lifetime">Post lifetime</string>
-    <string name="prompt_lifetime">How many hours should this post be available?</string>
-    <string name="title_delete_comment">Delete comment</string>
-    <string name="error_delete_comment">Something went wrong while deleting your comment. Please check your internet connection and try again.</string>
-    <string name="error_report_comment">Something went wrong while reporting this comment. Please check your internet connection and try again.</string>
-    <string name="prompt_comment_report">Comment reported.</string>
 </resources>
