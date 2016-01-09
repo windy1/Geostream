@@ -40,6 +40,17 @@ def inject_client_secret(serializer):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+def delete_expired_posts():
+    posts = Post.objects.all()
+    for post in posts:
+        now = timezone.now()
+        dt = now - post.created  # timedelta between the creation date of the post and now
+        mins = divmod(dt.total_seconds(), 60)  # (minutes, seconds)
+        hours = mins[0] / 60
+        if hours >= post.lifetime:
+            post.delete()
+
+
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -62,6 +73,7 @@ class PostViewSet(viewsets.ModelViewSet):
         toLng = float(data['toLng'])
 
         # find posts that are within the range
+        delete_expired_posts()
         posts = Post.objects.all()
         inRange = []
         for post in posts:
@@ -73,15 +85,7 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def list(self, request):
-        # delete expired posts
-        posts = Post.objects.all()
-        for post in posts:
-            now = timezone.now()
-            dt = now - post.created  # timedelta between the creation date of the post and now
-            mins = divmod(dt.total_seconds(), 60)  # (minutes, seconds)
-            hours = mins[0] / 60
-            if hours >= post.lifetime:
-                post.delete()
+        delete_expired_posts()
         return viewsets.ModelViewSet.list(self, request)  # after deleting old posts, pass to super method
 
     def create(self, request):
