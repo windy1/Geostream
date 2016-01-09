@@ -25,7 +25,7 @@ public class ResourceDeleteRequest<T extends Resource> extends ResourceDetailReq
 
     @Override
     public ResourceResponse<T> send() throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = getConnection();
         conn.setRequestMethod("DELETE");
         conn.setRequestProperty("ClientSecret", clientSecret);
         return new ResourceResponse(c, resourceClass, conn);

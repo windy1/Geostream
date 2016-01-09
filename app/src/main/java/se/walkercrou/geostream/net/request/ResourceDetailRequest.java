@@ -26,6 +26,6 @@ public class ResourceDetailRequest<T extends Resource> extends Request<ResourceR
     @Override
     public ResourceResponse<T> send() throws IOException {
         // Simple HTTP GET request, JSON expected as response
-        return new ResourceResponse(c, resourceClass, (HttpURLConnection) url.openConnection());
+        return new ResourceResponse(c, resourceClass, getConnection());
     }
 }

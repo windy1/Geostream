@@ -117,3 +117,8 @@ REST_FRAMEWORK = {
         'anon': '100/day',
     },
 }
+
+# gs_web_api settings
+GS_WEB_API = {
+    'CHECK_USER_AGENT': False,
+}

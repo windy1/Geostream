@@ -1,28 +1,10 @@
 from rest_framework import viewsets
 from .models import Post, Comment, Flag
 from .serializers import PostSerializer, CommentSerializer, FlagSerializer
-from rest_framework import status, permissions
+from rest_framework import status
 from rest_framework.decorators import list_route
 from rest_framework.response import Response
-
-
-class ClientSecretPermission(permissions.BasePermission):
-    """
-    Permission that determines whether a Post can be deleted by a client. In order to delete a post the client must
-    provide a ClientSecret header that matches the client_secret field in the Post object that they are trying to
-    delete.
-    """
-    META_KEY = 'HTTP_CLIENTSECRET'
-
-    def has_object_permission(self, request, view, obj):
-        if request.method != 'DELETE':
-            return True  # this permission only handles deletions
-
-        if self.META_KEY not in request.META:
-            return False  # no client secret provided
-        client_secret = request.META[self.META_KEY]
-
-        return str(obj.client_secret) == str(client_secret)  # check if the client secrets match
+from .permissions import ClientSecretPermission, UserAgentPermission
 
 
 def inject_client_secret(serializer):
@@ -43,7 +25,7 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     http_method_names = ['get', 'post', 'head', 'delete']
-    permission_classes = (ClientSecretPermission, )
+    permission_classes = (ClientSecretPermission, UserAgentPermission,)
 
     @list_route()
     def range(self, request):
@@ -92,7 +74,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     http_method_names = ['get', 'post', 'head', 'delete']
-    permission_classes = (ClientSecretPermission, )
+    permission_classes = (ClientSecretPermission, UserAgentPermission,)
 
     def create(self, request):
         # include the client_secret only on initial creation
@@ -103,3 +85,4 @@ class FlagViewSet(viewsets.ModelViewSet):
     queryset = Flag.objects.all()
     serializer_class = FlagSerializer
     http_method_names = ['get', 'post', 'head']
+    permission_classes = (UserAgentPermission,)

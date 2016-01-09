@@ -3,6 +3,7 @@ package se.walkercrou.geostream.net.request;
 import android.os.AsyncTask;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -23,6 +24,11 @@ public abstract class Request<T extends Response> {
      * Server root for file storage for resources.
      */
     public static final String MEDIA_ROOT = "/media/";
+
+    /**
+     * User agent property to send in each request
+     */
+    public static final String USER_AGENT = G.app.name + '/' + G.app.versionCode + " (Android)";
 
     protected URL url;
 
@@ -54,6 +60,18 @@ public abstract class Request<T extends Response> {
      */
     public Request(String route) {
         this(route, true);
+    }
+
+    /**
+     * Opens a new connection to the URL of this request.
+     *
+     * @return new connection
+     * @throws IOException
+     */
+    public HttpURLConnection getConnection() throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestProperty("User-Agent", USER_AGENT);
+        return conn;
     }
 
     /**

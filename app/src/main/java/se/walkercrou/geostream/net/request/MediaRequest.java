@@ -24,6 +24,6 @@ public class MediaRequest extends Request<MediaResponse> {
         // just a simple GET request here
         boolean video = url.toString().endsWith(Post.VIDEO_FILE_EXTENSION + '/') ||
                 url.toString().endsWith(Post.VIDEO_FILE_EXTENSION);
-        return new MediaResponse(c, video, (HttpURLConnection) url.openConnection());
+        return new MediaResponse(c, video, getConnection());
     }
 }

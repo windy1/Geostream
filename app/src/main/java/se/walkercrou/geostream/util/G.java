@@ -2,6 +2,7 @@ package se.walkercrou.geostream.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
@@ -45,6 +46,7 @@ public final class G {
 
     public final String name; // application name
     public final String serverUrl; // location of server
+    public final int versionCode;
     public final SharedPreferences postSecrets; // collection of client_secrets to edit posts
     public final SharedPreferences commentSecrets; // collection of client_secrets to edit comments
     public final SharedPreferences hiddenPosts; // posts that are hidden from the client
@@ -58,6 +60,14 @@ public final class G {
         commentSecrets = context.getSharedPreferences("CommentSecrets", Context.MODE_PRIVATE);
         hiddenPosts = context.getSharedPreferences("HiddenPosts", Context.MODE_PRIVATE);
         hiddenComments = context.getSharedPreferences("HiddenComments", Context.MODE_PRIVATE);
+
+        // set version code
+        try {
+            versionCode = context.getPackageManager()
+                    .getPackageInfo(context.getPackageName(), 0).versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

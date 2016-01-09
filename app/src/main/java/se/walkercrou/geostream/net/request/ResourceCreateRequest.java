@@ -38,7 +38,7 @@ public class ResourceCreateRequest<T extends Resource> extends ResourceListReque
     @Override
     public ResourceResponse<T> send() throws IOException {
         // obtain server connection
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = getConnection();
         conn.setUseCaches(false);
         conn.setDoOutput(true);
 

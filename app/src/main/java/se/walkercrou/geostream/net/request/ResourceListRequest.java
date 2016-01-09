@@ -56,6 +56,6 @@ public class ResourceListRequest<T extends Resource> extends Request<ResourceRes
         url = new URL(urlBuilder.toString());
         G.d("url = " + url);
 
-        return new ResourceResponse(c, resourceClass, (HttpURLConnection) url.openConnection());
+        return new ResourceResponse(c, resourceClass, getConnection());
     }
 }
