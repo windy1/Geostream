@@ -2,6 +2,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
+from django.utils import timezone
 import uuid
 
 
@@ -21,6 +22,13 @@ class Post(models.Model):
 
     class Meta:
         ordering = ('created',)
+
+    def is_expired(self):
+        now = timezone.now()
+        dt = now - self.created
+        mins = divmod(dt.total_seconds(), 60)
+        hours = mins[0] / 60
+        return hours >= self.lifetime
 
 
 @receiver(pre_delete, sender=Post)

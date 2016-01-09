@@ -40,17 +40,6 @@ def inject_client_secret(serializer):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-def delete_expired_posts():
-    posts = Post.objects.all()
-    for post in posts:
-        now = timezone.now()
-        dt = now - post.created  # timedelta between the creation date of the post and now
-        mins = divmod(dt.total_seconds(), 60)  # (minutes, seconds)
-        hours = mins[0] / 60
-        if hours >= post.lifetime:
-            post.delete()
-
-
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -63,7 +52,7 @@ class PostViewSet(viewsets.ModelViewSet):
         Returns a list view of the posts within a specified lat/lng range.
         """
         data = request.query_params
-        # make range parameters are present
+        # make sure range parameters are present
         if 'fromLat' not in data or 'toLat' not in data or 'fromLng' not in data or 'toLng' not in data:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -73,22 +62,30 @@ class PostViewSet(viewsets.ModelViewSet):
         toLng = float(data['toLng'])
 
         # find posts that are within the range
-        delete_expired_posts()
         posts = Post.objects.all()
         inRange = []
         for post in posts:
             if post.lat >= fromLat and post.lat <= toLat and post.lng >= fromLng and post.lng <= toLng:
-                inRange.append(post)
+                # post is in range
+                if post.is_expired():
+                    post.delete()  # delete in-range post if expired
+                else:
+                    inRange.append(post)  # otherwise, add to response list
 
         # return list of posts
         serializer = self.get_serializer(inRange, many=True)
         return Response(serializer.data)
 
     def list(self, request):
-        delete_expired_posts()
+        # delete all expired posts
+        posts = Post.objects.all()
+        for post in posts:
+            if post.is_expired():
+                post.delete()
         return viewsets.ModelViewSet.list(self, request)  # after deleting old posts, pass to super method
 
     def create(self, request):
+        # include the client_secret only on initial creation
         return inject_client_secret(PostSerializer(data=request.data))
 
 
@@ -99,6 +96,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (ClientSecretPermission, )
 
     def create(self, request):
+        # include the client_secret only on initial creation
         return inject_client_secret(CommentSerializer(data=request.data))
 
 
