@@ -30,14 +30,29 @@ public abstract class Resource {
         this.created = created;
     }
 
+    /**
+     * Returns the unique identifier of this resource.
+     *
+     * @return unique id
+     */
     public int getId() {
         return id;
     }
 
+    /**
+     * Returns the shorthand name for this resource used by the server.
+     *
+     * @return shorthand name
+     */
     public String getTypeName() {
         return typeName;
     }
 
+    /**
+     * Returns the {@link Date} on which this resource was created.
+     *
+     * @return date of creation
+     */
     public Date getCreationDate() {
         return created;
     }
