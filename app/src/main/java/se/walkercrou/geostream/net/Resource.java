@@ -7,10 +7,6 @@ import java.util.Date;
  * "static T parse(JSONObject)" method.
  */
 public abstract class Resource {
-    protected final int id;
-    protected final String typeName;
-    protected final Date created;
-
     /**
      * @see se.walkercrou.geostream.post.Post
      */
@@ -23,6 +19,19 @@ public abstract class Resource {
      * @see se.walkercrou.geostream.post.Flag
      */
     public static final String FLAGS = "flags";
+
+    /**
+     * Integer: A unique id for the post
+     */
+    public static final String PARAM_ID = "id";
+    /**
+     * Date: The date-time that this post was created.
+     */
+    public static final String PARAM_CREATED = "created";
+
+    protected final int id;
+    protected final String typeName;
+    protected final Date created;
 
     protected Resource(int id, String typeName, Date created) {
         this.id = id;

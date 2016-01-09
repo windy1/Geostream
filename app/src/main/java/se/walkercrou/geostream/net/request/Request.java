@@ -94,7 +94,9 @@ public abstract class Request<T extends Response> {
                 @Override
                 protected T doInBackground(Void... params) {
                     try {
-                        return send();
+                        T response = send();
+                        G.d(response);
+                        return response;
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }

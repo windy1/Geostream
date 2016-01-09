@@ -43,8 +43,6 @@ import java.util.Map;
 
 import se.walkercrou.geostream.MapActivity;
 import se.walkercrou.geostream.R;
-import se.walkercrou.geostream.net.request.MediaRequest;
-import se.walkercrou.geostream.net.response.MediaResponse;
 import se.walkercrou.geostream.util.E;
 import se.walkercrou.geostream.util.G;
 
@@ -53,7 +51,6 @@ import se.walkercrou.geostream.util.G;
  * {@link MapActivity}. The intent must contain a {@link #EXTRA_POST} with the {@link Post} that
  * is to be displayed. Provides back navigation to the {@link MapActivity}.
  */
-@SuppressWarnings("deprecation")
 public class PostDetailActivity extends FragmentActivity implements ViewPager.OnPageChangeListener {
     /**
      * Extra that contains the Post that is expected in this activity.
@@ -71,6 +68,9 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
      * Class that handles actions related to the {@link ActionBar}.
      */
     private static ActionBarHandler actionBarHandler;
+    /**
+     * Class that handles video playback and actions
+     */
     private static VideoHandler videoHandler;
 
     private Post post;
@@ -165,6 +165,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
      * Hides this post and starts the {@link MapActivity}.
      */
     public void hidePost() {
+        G.i("Hiding Post #" + post.getId());
         post.setHidden(true);
         startActivity(new Intent(this, MapActivity.class));
     }
@@ -181,6 +182,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     private void _reportPost(Flag.Reason reason) {
+        G.i("Reporting Post #" + post.getId() + " for: " + reason.toString());
         try {
             post.flag(this, reason, (error) -> E.internal(this, error));
         } catch (IOException e) {
@@ -193,8 +195,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             progressDialog.dismiss();
 
         post.setHidden(true);
-        handler.post(() -> Toast.makeText(this, R.string.prompt_post_report, Toast.LENGTH_LONG)
-                .show());
+        handler.post(() -> Toast.makeText(this, R.string.prompt_post_report, Toast.LENGTH_LONG).show());
         startActivity(new Intent(this, MapActivity.class));
     }
 
@@ -208,6 +209,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     private void _deletePost() {
+        G.i("Deleting Post #" + post.getId());
         try {
             post.delete(this, clientSecret, (error) -> E.internal(this, error));
         } catch (IOException e) {
@@ -219,7 +221,6 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         if (progressDialog != null)
             progressDialog.dismiss();
 
-        G.d("Post deleted, starting MapActivity");
         startActivity(new Intent(this, MapActivity.class));
     }
 
@@ -258,35 +259,23 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
     }
 
     private void downloadMedia() {
-        // TODO: Move media request handling to Post
-        // download the media for this post which is either an image or video
-        String url = post.getMediaUrl();
-        G.i("Downloading Post media from: " + url);
-
-        // get response from server
-        MediaResponse response;
+        G.i("Downloading Post media from: " + post.getMediaUrl());
+        Object media;
         try {
-            response = new MediaRequest(this, url).sendInBackground();
+            media = post.getMediaObject(this, e -> E.internal(this, e));
         } catch (IOException e) {
+            e.printStackTrace();
             E.connection(this, (d, w) -> downloadMedia());
             return;
         }
 
-        // check response
-        if (response == null)
-            throw new RuntimeException("Could not download post media");
-        else if (response.isError())
-            throw new RuntimeException("Could not download post media: "
-                    + response.getStatusCode());
-
         // get and check result
-        Object media = response.get();
         if (media instanceof File) {
             // received a video
-            this.media = response.get().toString();
+            this.media = media.toString();
         } else {
             // received an image
-            Bitmap bmp = (Bitmap) response.get();
+            Bitmap bmp = (Bitmap) media;
             Matrix matrix = new Matrix();
             matrix.postRotate(90);
             this.media = Bitmap.createBitmap(
@@ -322,7 +311,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
         private final ActionBar ab;
         private final String clientSecret;
-        private final Map<DelayedHideTask, Boolean> hideTasks = new HashMap<>();
+        private final Map<DelayedHideTask, Boolean> futureHideTasks = new HashMap<>();
         private final Handler handler = new Handler();
         private MenuItem commentsItem;
 
@@ -383,7 +372,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         private void hideActionBar() {
             cancelHideTasks(); // cancel pending hide tasks
             DelayedHideTask hideTask = new DelayedHideTask();
-            hideTasks.put(hideTask, false);
+            futureHideTasks.put(hideTask, false);
             hideTask.start();
         }
 
@@ -393,8 +382,8 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         }
 
         private void cancelHideTasks() {
-            for (DelayedHideTask hideTask : hideTasks.keySet())
-                hideTasks.put(hideTask, true);
+            for (DelayedHideTask hideTask : futureHideTasks.keySet())
+                futureHideTasks.put(hideTask, true);
         }
 
         /**
@@ -403,17 +392,19 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         public class DelayedHideTask extends Thread {
             @Override
             public void run() {
+                // wait 3 seconds
                 try {
                     Thread.sleep(HIDE_DELAY);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
 
-                boolean cancelled = hideTasks.get(this);
+                // hide the action bar if the task hasn't been cancelled
+                boolean cancelled = futureHideTasks.get(this);
                 if (!cancelled)
                     handler.post(ab::hide);
 
-                hideTasks.remove(this);
+                futureHideTasks.remove(this);
             }
         }
     }
@@ -429,10 +420,13 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
          */
         public void onVideoClick() {
             if (mediaPlayer != null) {
-                if (mediaPlayer.isPlaying())
+                if (mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
-                else
+                    G.i("User paused video.");
+                } else {
                     mediaPlayer.start();
+                    G.i("User resumed video.");
+                }
             }
         }
 
@@ -641,6 +635,8 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             }
 
             // create comment
+            G.i("Sending comment on Post #" + post.getId());
+            G.i("  Content: \"" + content + "\"");
             Comment comment;
             try {
                 comment = post.comment(getContext(), content, G::e);
@@ -701,6 +697,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
                         adapter.add(comment);
                 }
                 swipeLayout.setRefreshing(false);
+                G.i("Comments refreshed.");
             });
         }
 
@@ -740,6 +737,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
         }
 
         private void reportComment(Comment comment, Flag.Reason reason) {
+            G.i("Reporting Comment #" + comment.getId() + " for: " + reason);
             try {
                 comment.flag(getContext(), reason, e -> E.internal(getActivity(), e));
             } catch (IOException e) {

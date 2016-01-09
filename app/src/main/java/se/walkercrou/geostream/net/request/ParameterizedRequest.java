@@ -1,5 +1,8 @@
 package se.walkercrou.geostream.net.request;
 
+/**
+ * Represents a Request that has parameters to be passed to the server.
+ */
 public interface ParameterizedRequest {
     /**
      * Sets the value of a parameter to write to the request.

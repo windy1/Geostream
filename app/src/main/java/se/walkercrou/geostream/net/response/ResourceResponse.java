@@ -43,7 +43,8 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
         try {
             parser = resourceType.getMethod("parse", Context.class, JSONObject.class);
         } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("All classes extending Resource must implement a "
+                    + "static parse(Context, JSONObject) method.");
         }
 
         try {
@@ -87,21 +88,17 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
     }
 
     /**
-     * Returns the "detail" string returned in the event of an error.
-     *
-     * @return error string
-     */
-    public String getErrorDetail() {
-        return errorDetail;
-    }
-
-    /**
      * Returns the full result list.
      *
      * @return full result list
      */
     public List<T> getList() {
         return results;
+    }
+
+    @Override
+    public String getErrorDetail() {
+        return errorDetail;
     }
 
     @Override
@@ -117,24 +114,5 @@ public class ResourceResponse<T extends Resource> extends Response<T> {
         } catch (JSONException e) {
             return super.toString();
         }
-    }
-
-    /**
-     * Checks if the specified response is not null and doesn't have an error. Returns true if no
-     * error.
-     *
-     * @param response to check
-     * @param callback in case of error
-     * @return true if no error
-     */
-    public static boolean check(ResourceResponse<?> response, ErrorCallback callback) {
-        if (response == null) {
-            callback.onError(null);
-            return false;
-        } else if (response.isError()) {
-            callback.onError(response.getErrorDetail());
-            return false;
-        }
-        return true;
     }
 }

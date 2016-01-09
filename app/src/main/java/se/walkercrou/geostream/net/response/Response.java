@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 
+import se.walkercrou.geostream.net.ErrorCallback;
+
 /**
  * Represents a response from the server
  *
@@ -71,7 +73,7 @@ public abstract class Response<T> {
      *
      * @return http status message
      */
-    public String getStatusMessage() {
+    public String getErrorDetail() {
         return statusMessage;
     }
 
@@ -83,5 +85,24 @@ public abstract class Response<T> {
      */
     public static boolean isStatusError(int code) {
         return code < STATUS_OK || code >= FIRST_ERROR_STATUS;
+    }
+
+    /**
+     * Checks if the specified response is not null and doesn't have an error. Returns true if no
+     * error.
+     *
+     * @param response to check
+     * @param callback in case of error
+     * @return true if no error
+     */
+    public static boolean check(Response<?> response, ErrorCallback callback) {
+        if (response == null) {
+            callback.onError(null);
+            return false;
+        } else if (response.isError()) {
+            callback.onError(response.getErrorDetail());
+            return false;
+        }
+        return true;
     }
 }

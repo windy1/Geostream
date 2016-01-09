@@ -11,7 +11,6 @@ import java.io.IOException;
 /**
  * Represents a video playback view within a {@link PostDetailActivity}.
  */
-@SuppressWarnings("deprecation")
 public class VideoPreview extends SurfaceView implements SurfaceHolder.Callback {
     protected final MediaPlayer player = new MediaPlayer();
     private final String dataSource; // path to video
@@ -22,7 +21,6 @@ public class VideoPreview extends SurfaceView implements SurfaceHolder.Callback 
 
         SurfaceHolder holder = getHolder();
         holder.addCallback(this);
-        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
     @Override

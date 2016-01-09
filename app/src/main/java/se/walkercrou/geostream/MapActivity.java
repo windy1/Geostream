@@ -95,6 +95,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 
     @Override
     protected void onStart() {
+        // attempt to connect to location services
         locationApi = new LocationApi(this);
         locationApi.connect(this, this);
         super.onStart();
@@ -102,6 +103,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 
     @Override
     protected void onStop() {
+        // disconnect from location services
         locationApi.disconnect();
         super.onStop();
     }
@@ -111,12 +113,13 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
         G.i("Connected to location services.");
 
         if (lostLocation) {
+            // show message if previously had connection and lost it
             Toast.makeText(this, R.string.prompt_location_restored, Toast.LENGTH_LONG).show();
             lostLocation = false;
         }
 
         setupMap();
-        splashScreen.setVisibility(View.GONE);
+        splashScreen.setVisibility(View.GONE); // make sure splash screen is hidden
         findViewById(R.id.fabs).setVisibility(View.VISIBLE); // make FAB container visible
         refreshBtn.show();
         cameraBtn.show();
@@ -140,7 +143,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
     @Override
     public void onLocationChanged(Location location) {
         if (map.getCameraPosition().zoom == MIN_MAP_ZOOM)
-            centerMapOnLocation(location);
+            centerMapOnLocation(location); // keep map centered on location
         refreshInBackground();
     }
 
@@ -156,9 +159,8 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.title_error)
                         .setMessage(R.string.error_location_required)
-                        .setPositiveButton(R.string.action_ok, (dialog, which) -> {
-                            MapActivity.this.finish();
-                        })
+                        .setPositiveButton(R.string.action_ok,
+                                (dialog, which) -> MapActivity.this.finish())
                         .show();
             }
         }
@@ -171,8 +173,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
         // get location
         Location location = locationApi.getLastLocation();
         if (location == null) {
-            // could not get location
-            E.location(this, (dialog, which) -> onMapReady(map)).show();
+            E.location(this, (dialog, which) -> onMapReady(map)).show(); // could not get location
             return;
         }
 

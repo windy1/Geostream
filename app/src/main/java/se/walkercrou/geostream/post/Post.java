@@ -18,22 +18,21 @@ import java.util.List;
 
 import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
+import se.walkercrou.geostream.net.request.MediaRequest;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest.MediaData;
 import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
 import se.walkercrou.geostream.net.request.ResourceDetailRequest;
 import se.walkercrou.geostream.net.request.ResourceListRequest;
+import se.walkercrou.geostream.net.response.MediaResponse;
 import se.walkercrou.geostream.net.response.ResourceResponse;
+import se.walkercrou.geostream.net.response.Response;
 import se.walkercrou.geostream.util.G;
 
 /**
  * Represents a Post that a user has created with a location and an image or video.
  */
 public class Post extends Resource implements Parcelable {
-    /**
-     * Integer: A unique id for the post
-     */
-    public static final String PARAM_ID = "id";
     /**
      * Float: The latitudinal coordinate where this post was taken.
      */
@@ -58,10 +57,6 @@ public class Post extends Resource implements Parcelable {
      * {@link Comment} array: The comments associated with this post
      */
     public static final String PARAM_COMMENTS = "comments";
-    /**
-     * Date: The date-time that this post was created.
-     */
-    public static final String PARAM_CREATED = "created";
     /**
      * Float: The lower latitude coordinate for retrieving posts within a range.
      */
@@ -196,19 +191,30 @@ public class Post extends Resource implements Parcelable {
     }
 
     /**
+     * Downloads and returns the post's media from the server.
+     *
+     * @param c context
+     * @param callback in case of error
+     * @return media object
+     * @throws IOException
+     */
+    public Object getMediaObject(Context c, ErrorCallback callback) throws IOException {
+        MediaResponse response = new MediaRequest(c, fileUrl).sendInBackground();
+        Response.check(response, callback);
+        return response.get();
+    }
+
+    /**
      * Retrieves new comments from the server
      *
      * @param callback in case of error
      */
     public void refreshComments(Context c, ErrorCallback callback) throws IOException {
-        // send request to server
         ResourceDetailRequest<Post> request
                 = new ResourceDetailRequest<>(c, Post.class, Resource.POSTS, id);
         ResourceResponse<Post> response = request.sendInBackground();
-
-        if (!ResourceResponse.check(response, callback))
+        if (!Response.check(response, callback))
             return;
-
         this.comments = response.get().comments;
     }
 
@@ -220,7 +226,7 @@ public class Post extends Resource implements Parcelable {
         ResourceDeleteRequest<Post> request
                 = new ResourceDeleteRequest<>(c, Post.class, Resource.POSTS, id, clientSecret);
         ResourceResponse<Post> response = request.sendInBackground();
-        return ResourceResponse.check(response, callback);
+        return Response.check(response, callback);
 
     }
 
@@ -234,7 +240,6 @@ public class Post extends Resource implements Parcelable {
      */
     public static Post create(Context c, Location location, int lifetime, MediaData data,
                               ErrorCallback callback) throws IOException {
-        // post to server
         ResourceCreateRequest<Post> request
                 = new ResourceCreateRequest<>(c, Post.class, Resource.POSTS);
         request.set(PARAM_LAT, location.getLatitude())
@@ -242,10 +247,7 @@ public class Post extends Resource implements Parcelable {
                 .set(PARAM_LIFETIME, lifetime)
                 .set(PARAM_MEDIA_FILE, data);
         ResourceResponse<Post> response = request.sendInBackground();
-
-        G.d(response);
-
-        if (!ResourceResponse.check(response, callback))
+        if (!Response.check(response, callback))
             return null;
         return response.get();
     }
@@ -264,15 +266,14 @@ public class Post extends Resource implements Parcelable {
      */
     public static List<Post> range(Context c, double fromLat, double toLat, double fromLng,
                                    double toLng, ErrorCallback callback) throws IOException {
-        // send request to server
         ResourceListRequest<Post> request
-                = new ResourceListRequest<>(c, Post.class, Resource.POSTS, "range");
+                = new ResourceListRequest<>(c, Post.class, Resource.POSTS, METHOD_RANGE);
         request.set(PARAM_FROM_LAT, fromLat)
                 .set(PARAM_TO_LAT, toLat)
                 .set(PARAM_FROM_LNG, fromLng)
                 .set(PARAM_TO_LNG, toLng);
         ResourceResponse<Post> response = request.sendInBackground();
-        if (!ResourceResponse.check(response, callback))
+        if (!Response.check(response, callback))
             return null;
         return response.getList();
     }
@@ -284,11 +285,9 @@ public class Post extends Resource implements Parcelable {
      * @return list of all posts
      */
     public static List<Post> all(Context c, ErrorCallback callback) throws IOException {
-        // send request to server
         ResourceResponse<Post> response = new ResourceListRequest<>(c, Post.class, Resource.POSTS)
                 .sendInBackground();
-        G.d(response);
-        if (!ResourceResponse.check(response, callback))
+        if (!Response.check(response, callback))
             return null;
         return response.getList();
     }
@@ -302,11 +301,11 @@ public class Post extends Resource implements Parcelable {
      */
     public static Post parse(Context c, JSONObject obj) throws JSONException, ParseException {
         // build post from object
+        int id = obj.getInt(PARAM_ID);
         Location loc = new Location(G.app.name);
         loc.setLatitude(obj.getDouble(PARAM_LAT));
         loc.setLongitude(obj.getDouble(PARAM_LNG));
         String fileUrl = obj.getString(PARAM_MEDIA_FILE);
-        int id = obj.getInt(PARAM_ID);
         Date created = G.parseDateString(obj.getString(PARAM_CREATED));
         Post post = new Post(id, loc, fileUrl, created);
 

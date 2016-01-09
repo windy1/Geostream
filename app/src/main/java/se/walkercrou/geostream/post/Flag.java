@@ -15,6 +15,7 @@ import se.walkercrou.geostream.net.ErrorCallback;
 import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
+import se.walkercrou.geostream.net.response.Response;
 import se.walkercrou.geostream.util.G;
 
 /**
@@ -22,15 +23,16 @@ import se.walkercrou.geostream.util.G;
  * by moderators. If a post is flagged 5 times or more, it is taken down automatically.
  */
 public class Flag extends Resource {
-    public static final String PARAM_ID = "id";
+    /**
+     * String: {@link Resource#getTypeName()} of resource that is being flagged.
+     */
     public static final String PARAM_RESOURCE_TYPE = "resource_type";
+    /**
+     * Integer: ID of resource specified by the {@link #PARAM_RESOURCE_TYPE}
+     */
     public static final String PARAM_RESOURCE_ID = "resource_id";
     /**
-     * Date: The date this flag was created.
-     */
-    public static final String PARAM_CREATED = "created";
-    /**
-     * String: The reason that the {@link Post} was flagged.
+     * String: The reason that the {@link Resource} was flagged.
      * @see Reason
      */
     public static final String PARAM_REASON = "reason";
@@ -48,7 +50,7 @@ public class Flag extends Resource {
     }
 
     /**
-     * Returns the {@link Reason} for the {@link Post} that was flagged.
+     * Returns the {@link Reason} for the {@link Resource} that was flagged.
      *
      * @return reason for flagging
      */
@@ -69,16 +71,13 @@ public class Flag extends Resource {
      */
     protected static Flag create(Context c, Resource resource, Reason reason,
                                  ErrorCallback callback) throws IOException {
-        // send request to server
-        G.d("creating flag for resource: " + resource.getTypeName() + '/' + resource.getId());
         ResourceCreateRequest<Flag> request
                 = new ResourceCreateRequest<>(c, Flag.class, Resource.FLAGS);
         request.set(PARAM_RESOURCE_TYPE, resource.getTypeName())
                 .set(PARAM_RESOURCE_ID, resource.getId())
                 .set(PARAM_REASON, reason);
         ResourceResponse<Flag> response = request.sendInBackground();
-
-        if (!ResourceResponse.check(response, callback))
+        if (!Response.check(response, callback))
             return null;
         return response.get();
     }
@@ -97,7 +96,7 @@ public class Flag extends Resource {
     }
 
     /**
-     * Represents a reason for flagging a {@link Post}.
+     * Represents a reason for flagging a {@link Resource}.
      *
      * @see <a href="https://play.google.com/about/developer-content-policy.html">
      *         https://play.google.com/about/developer-content-policy.html
@@ -105,14 +104,14 @@ public class Flag extends Resource {
      */
     public enum Reason {
         /**
-         * The post contains content that is deemed to be inappropriate. This includes sexually
+         * The resource contains content that is deemed to be inappropriate. This includes sexually
          * explicit material, hate speech, sensitive events, intellectual property,
          * illegal activities, etc.
          */
         INAPPROPRIATE_CONTENT("IC"),
         /**
-         * The post contains content that violates the user's or another's privacy. This includes
-         * personal or confidential information, etc.
+         * The resource contains content that violates the user's or another's privacy. This
+         * includes personal or confidential information, etc.
          */
         PRIVACY_VIOLATION("PV"),
         /**

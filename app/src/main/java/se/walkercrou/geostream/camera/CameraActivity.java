@@ -322,7 +322,8 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
 
         // open the camera
         openCamera();
-        cam.getParameters().setRecordingHint(true);
+        Camera.Parameters params = cam.getParameters();
+        params.setRecordingHint(true);
         preview.setCamera(cam);
 
         // add preview to frame layout
@@ -342,7 +343,6 @@ public class CameraActivity extends Activity implements PictureCallback, Shutter
     }
 
     private boolean startRecording(View view) {
-        G.d("startRecording(View)");
         recording = true;
         new Thread(this::startProgressBar).start(); // start recording progress bar in background
 

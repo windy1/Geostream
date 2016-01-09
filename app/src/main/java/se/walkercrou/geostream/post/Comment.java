@@ -16,16 +16,13 @@ import se.walkercrou.geostream.net.Resource;
 import se.walkercrou.geostream.net.request.ResourceCreateRequest;
 import se.walkercrou.geostream.net.request.ResourceDeleteRequest;
 import se.walkercrou.geostream.net.response.ResourceResponse;
+import se.walkercrou.geostream.net.response.Response;
 import se.walkercrou.geostream.util.G;
 
 /**
  * Represents a comment within a Post
  */
 public class Comment extends Resource implements Parcelable {
-    /**
-     * Integer: Unique identifier of comment
-     */
-    public static final String PARAM_ID = "id";
     /**
      * Integer: Post ID that this comment belongs to.
      */
@@ -34,10 +31,6 @@ public class Comment extends Resource implements Parcelable {
      * String: The actual content of the comment.
      */
     public static final String PARAM_CONTENT = "content";
-    /**
-     * Date: The date this comment was created.
-     */
-    public static final String PARAM_CREATED = "created";
     /**
      * String: Client secret for modifying comment in the future
      */
@@ -107,11 +100,10 @@ public class Comment extends Resource implements Parcelable {
      */
     public boolean delete(Context c, String clientSecret, ErrorCallback callback)
             throws IOException {
-        // send request
         ResourceDeleteRequest<Comment> request = new ResourceDeleteRequest<>(c, Comment.class,
                 Resource.COMMENTS, id, clientSecret);
         ResourceResponse<Comment> response = request.sendInBackground();
-        return ResourceResponse.check(response, callback);
+        return Response.check(response, callback);
     }
 
     /**
@@ -126,13 +118,11 @@ public class Comment extends Resource implements Parcelable {
      */
     protected static Comment create(Context c, Post post, String content, ErrorCallback callback)
             throws IOException {
-        // send request to server
         ResourceCreateRequest<Comment> request
                 = new ResourceCreateRequest<>(c, Comment.class, Resource.COMMENTS);
         request.set(PARAM_POST, post.getId()).set(PARAM_CONTENT, content);
         ResourceResponse<Comment> response = request.sendInBackground();
-
-        if (!ResourceResponse.check(response, callback))
+        if (!Response.check(response, callback))
             return null;
 
         // create comment and add it to the post
