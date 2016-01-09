@@ -104,7 +104,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-MEDIA_ROOT = '/Users/walker/Development/geostream-media'
+MEDIA_ROOT = os.environ['GEOSTREAM_MEDIA_DIR']
 
 MEDIA_URL = '/media/'
 
