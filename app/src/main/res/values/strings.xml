@@ -94,4 +94,5 @@
     <string name="report_reason_pv">Privacy violation</string>
     <string name="report_reason_vb">Violence or Bullying</string>
     <string name="report_reason_sp">Spam</string>
+    <string name="prompt_comment_delete">Comment deleted.</string>
 </resources>

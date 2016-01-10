@@ -112,10 +112,10 @@ MEDIA_URL = '/media/'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [],
     'DEFAULT_PERMISSION_CLASSES': [],
-    'DEFAULT_THROTTLE_CLASSES': ('rest_framework.throttling.AnonRateThrottle',),
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-    },
+    # 'DEFAULT_THROTTLE_CLASSES': ('rest_framework.throttling.AnonRateThrottle',),
+    # 'DEFAULT_THROTTLE_RATES': {
+    #     'anon': '100/day',
+    # },
 }
 
 # gs_web_api settings

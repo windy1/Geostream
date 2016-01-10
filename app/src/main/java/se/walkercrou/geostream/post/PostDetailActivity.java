@@ -23,7 +23,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -153,6 +152,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
     @Override
     public void onPageSelected(int position) {
+        G.hideVirtualKeyboard(this, viewPager);
         actionBarHandler.onPageSelected(position);
         videoHandler.onPageSelected(position);
     }
@@ -654,7 +654,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             // clear and remove focus from reply box
             field.setText("", TextView.BufferType.EDITABLE);
             view.requestFocus();
-            hideKeyboard();
+            G.hideVirtualKeyboard(getActivity(), view);
         }
 
         @Override
@@ -731,6 +731,7 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
 
                         refresh(); // refresh the list view
                         d.dismiss();
+                        Toast.makeText(c, R.string.prompt_comment_delete, Toast.LENGTH_LONG).show();
                     })
                     .setNegativeButton(R.string.action_cancel, (d, w) -> d.dismiss())
                     .show();
@@ -749,13 +750,6 @@ public class PostDetailActivity extends FragmentActivity implements ViewPager.On
             comment.setHidden(true);
             refresh();
             Toast.makeText(getContext(), R.string.prompt_comment_report, Toast.LENGTH_LONG).show();
-        }
-
-        private void hideKeyboard() {
-            // hides the virtual keyboard
-            InputMethodManager in = (InputMethodManager) getActivity()
-                    .getSystemService(Context.INPUT_METHOD_SERVICE);
-            in.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
         }
     }
 }

@@ -1,11 +1,14 @@
 package se.walkercrou.geostream.util;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -185,5 +188,17 @@ public final class G {
 
         // otherwise display days
         return (hours / 24) + "d";
+    }
+
+    /**
+     * Hides the virtual keyboard.
+     *
+     * @param a activity
+     * @param v view
+     */
+    public static void hideVirtualKeyboard(Activity a, View v) {
+        InputMethodManager in
+                = (InputMethodManager) a.getSystemService(Context.INPUT_METHOD_SERVICE);
+        in.hideSoftInputFromWindow(v.getApplicationWindowToken(), 0);
     }
 }

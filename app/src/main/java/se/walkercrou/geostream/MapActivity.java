@@ -179,10 +179,9 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 
         // configure map settings
         UiSettings ui = map.getUiSettings();
-        // lock map to position and do not allow zoom
-        ui.setAllGesturesEnabled(false);
-        ui.setZoomGesturesEnabled(true);
-        ui.setMapToolbarEnabled(false);
+        ui.setScrollGesturesEnabled(false);
+        ui.setTiltGesturesEnabled(false);
+
         map.setOnCameraChangeListener(this); // listen for camera changes
         map.setOnMarkerClickListener(this); // redirect all marker clicks to this
         map.setMyLocationEnabled(true);
